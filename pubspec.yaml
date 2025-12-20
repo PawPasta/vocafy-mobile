@@ -45,6 +45,9 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  
+  # Package để tự động generate app icon cho tất cả platforms
+  flutter_launcher_icons: ^0.14.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -58,9 +61,10 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - lib/assets/images/
+    - lib/assets/icons/
+    - lib/assets/translations/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -87,3 +91,39 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Configuration cho flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "lib/assets/images/app_icon.png"
+  
+  # Cấu hình cho Android - Adaptive Icon với background trắng
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "lib/assets/images/app_icon.png"
+  
+  # Loại bỏ background có sẵn trong icon (nếu có)
+  remove_alpha_channel: true
+  
+  # Cấu hình cho iOS - Background trắng
+  remove_alpha_ios: true
+  background_color_ios: "#FFFFFF"
+  
+  # Cấu hình cho Web
+  web:
+    generate: true
+    image_path: "lib/assets/images/app_icon.png"
+    background_color: "#FFFFFF"
+  
+  # Cấu hình cho Windows
+  windows:
+    generate: true
+    image_path: "lib/assets/images/app_icon.png"
+    icon_size: 48
+    background_color: "#FFFFFF"
+  
+  # Cấu hình cho macOS
+  macos:
+    generate: true
+    image_path: "lib/assets/images/app_icon.png"
+    background_color: "#FFFFFF"
