@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math' as math;
-import '../onboarding/onboarding_screen.dart';
 
 /// Splash screen displayed on app launch with animated logo
 class SplashScreen extends StatefulWidget {
@@ -178,8 +177,8 @@ class _SplashScreenState extends State<SplashScreen>
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        const Color(0xFF5B7FFF).withOpacity(0.3),
-                        const Color(0xFF4CAF50).withOpacity(0.1),
+                        const Color(0xFF5B7FFF).withAlpha(77),
+                        const Color(0xFF4CAF50).withAlpha(26),
                         Colors.transparent,
                       ],
                     ),
@@ -208,12 +207,12 @@ class _SplashScreenState extends State<SplashScreen>
                 borderRadius: BorderRadius.circular(60),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF5B7FFF).withOpacity(0.2),
+                    color: const Color(0xFF5B7FFF).withAlpha(51),
                     blurRadius: 40,
                     spreadRadius: 10,
                   ),
                   BoxShadow(
-                    color: const Color(0xFF4CAF50).withOpacity(0.15),
+                    color: const Color(0xFF4CAF50).withAlpha(38),
                     blurRadius: 60,
                     spreadRadius: 15,
                   ),

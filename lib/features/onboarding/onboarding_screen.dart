@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
 import 'models/onboarding_model.dart';
 import 'widgets/onboarding_page_widget.dart';
+import '../../config/routes/route_names.dart';
 
 /// Onboarding screen with multiple pages and smooth animations
 class OnboardingScreen extends StatefulWidget {
@@ -85,11 +85,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   /// Complete onboarding and navigate to main app
   void _completeOnboarding() {
-    // TODO: Navigate to home/login screen
-    // Navigator.pushReplacement(
-    //   context,
-    //   MaterialPageRoute(builder: (context) => const HomePage()),
-    // );
+    Navigator.pushReplacementNamed(context, RouteNames.login);
   }
 
   @override
@@ -223,7 +219,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF5B7FFF).withOpacity(0.3),
+              color: const Color(0xFF5B7FFF).withAlpha(77),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
