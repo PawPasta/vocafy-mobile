@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "1760570910",
+    "project_id": "vocayfy-exe",
+    "storage_bucket": "vocayfy-exe.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1760570910:android:a72acd658c8e14b555c80f",
+        "android_client_info": {
+          "package_name": "com.exe201.vocafy_mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1760570910-t7p6l3tj21g3fkl3v4v5vr819i1obtht.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.exe201.vocafy_mobile",
+            "certificate_hash": "531b90899ff5b5c0802a26fe89957c78ab9bdfbc"
+          }
+        },
+        {
+          "client_id": "1760570910-9n3sra2q84pnc63hfl4m97jpi4j05a95.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA2wwofXGlZdZYaCBuEJRaiLzd5kW5noqY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1760570910-9n3sra2q84pnc63hfl4m97jpi4j05a95.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1760570910-9g17e29vuor169tpm8hhirnsupcf8c4c.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.exe201.vocafyMobile"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
