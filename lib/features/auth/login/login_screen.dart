@@ -1,17 +1,68 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../../../data/data.dart';
+import '../../../config/routes/route_names.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
   static const Color _primaryBlue = Color(0xFF5B7FFF);
   static const Color _primaryBlueDark = Color(0xFF4C6FFF);
   static const Color _pageBg = Colors.white;
 
-  void _onGoogleSignInPressed(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Google sign-in not yet implemented')),
-    );
+  bool _isLoading = false;
+
+  Future<void> _onGoogleSignInPressed(BuildContext context) async {
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      // 1. Lấy Google ID Token
+      final idToken = await authService.getGoogleIdToken();
+
+      if (idToken == null) {
+        // User hủy đăng nhập
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
+      // 2. Gửi id_token về server dạng JSON body
+      final response = await api.post(Api.loginGoogle, {'id_token': idToken});
+
+      if (!mounted) return;
+
+      // 3. Xử lý response từ server
+      if (response.data != null) {
+        // Lưu access token từ server (nếu có)
+        if (response.data['accessToken'] != null) {
+          api.setToken(response.data['accessToken']);
+        }
+
+        // Thành công - chuyển đến home
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          RouteNames.home,
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đăng nhập thất bại: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -117,9 +168,7 @@ class LoginScreen extends StatelessWidget {
           topRight: Radius.circular(26),
         ),
       ),
-      child: Center(
-        child: _buildGoogleButton(context),
-      ),
+      child: Center(child: _buildGoogleButton(context)),
     );
   }
 
@@ -136,21 +185,27 @@ class LoginScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
           ),
         ),
-        onPressed: () => _onGoogleSignInPressed(context),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildGoogleMark(),
-            const SizedBox(width: 10),
-            const Text(
-              'Sign in with Google',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
+        onPressed: _isLoading ? null : () => _onGoogleSignInPressed(context),
+        child: _isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(_primaryBlueDark),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildGoogleMark(),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Sign in with Google',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }
