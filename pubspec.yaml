@@ -37,6 +37,13 @@ dependencies:
 
   # Icons (Google icon)
   font_awesome_flutter: ^10.7.0
+  firebase_core: ^2.32.0
+
+  # Google Sign-In
+  google_sign_in: ^6.2.2
+
+  # HTTP client
+  dio: ^5.4.0
 
 dev_dependencies:
   flutter_test:
