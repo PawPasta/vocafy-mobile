@@ -42,6 +42,9 @@ dependencies:
   # Google Sign-In
   google_sign_in: ^6.2.2
 
+  # Firebase Auth
+  firebase_auth: ^4.20.0
+
   # HTTP client
   dio: ^5.4.0
 

@@ -23,25 +23,27 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // 1. Lấy Google ID Token
-      final idToken = await authService.getGoogleIdToken();
+      // 1. Lấy Firebase ID Token (sau khi đăng nhập Google qua Firebase Auth)
+      final firebaseIdToken = await authService.getFirebaseIdToken();
 
-      if (idToken == null) {
+      if (firebaseIdToken == null) {
         // User hủy đăng nhập
         if (mounted) setState(() => _isLoading = false);
         return;
       }
 
-      // 2. Gửi id_token về server dạng JSON body
-      final response = await api.post(Api.loginGoogle, {'id_token': idToken});
+        // 2. Gửi Firebase ID token về server dạng JSON body
+          final response =
+            await api.post(Api.loginGoogle, {'id_token': firebaseIdToken});
 
       if (!mounted) return;
 
       // 3. Xử lý response từ server
       if (response.data != null) {
         // Lưu access token từ server (nếu có)
-        if (response.data['accessToken'] != null) {
-          api.setToken(response.data['accessToken']);
+        final result = response.data['result'];
+        if (result is Map && result['accessToken'] != null) {
+          api.setToken(result['accessToken']);
         }
 
         // Thành công - chuyển đến home

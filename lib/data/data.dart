@@ -2,8 +2,8 @@
 // Import file này để sử dụng tất cả
 
 // Network - API
-export 'network/api_client.dart';
-export 'network/api_endpoints.dart';
+export '../core/api/api_client.dart';
+export '../core/api/api_endpoints.dart';
 
 // Services
 export 'services/auth_service.dart';

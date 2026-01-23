@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import '../network/api_client.dart';
-import '../network/api_endpoints.dart';
+import '../../core/api/api_client.dart';
+import '../../core/api/api_endpoints.dart';
 
 /// Auth Service đơn giản
 /// Xử lý Google Sign-In và gọi API
@@ -21,26 +22,43 @@ class AuthService {
       final googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return null; // User hủy
 
-      // 2. Lấy ID Token
+      // 2. Lấy Google tokens
       final googleAuth = await googleUser.authentication;
       final idToken = googleAuth.idToken;
+      final accessToken = googleAuth.accessToken;
 
-      if (idToken == null) {
-        throw Exception('Không lấy được ID Token');
+      if (idToken == null || accessToken == null) {
+        throw Exception('Không lấy được Google token');
+      }
+
+      // 3. Đăng nhập Firebase bằng credential
+      final credential = GoogleAuthProvider.credential(
+        idToken: idToken,
+        accessToken: accessToken,
+      );
+      final userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
+
+      // 4. Lấy Firebase ID token để gửi server
+      final firebaseIdToken = await userCredential.user?.getIdToken();
+      if (firebaseIdToken == null) {
+        throw Exception('Không lấy được Firebase ID token');
       }
 
       // Log trong debug mode
       if (kDebugMode) {
-        print('🔑 Google ID Token: $idToken');
+        print('🔑 Firebase ID Token: $firebaseIdToken');
         print('📧 Email: ${googleUser.email}');
       }
 
-      // 3. Gửi idToken lên server
-      final response = await api.post(Api.loginGoogle, {'idToken': idToken});
+      // 5. Gửi Firebase ID token lên server
+        final response =
+          await api.post(Api.loginGoogle, {'id_token': firebaseIdToken});
 
       // 4. Lưu token từ server (nếu có)
-      if (response.data['accessToken'] != null) {
-        api.setToken(response.data['accessToken']);
+      final result = response.data['result'];
+      if (result is Map && result['accessToken'] != null) {
+        api.setToken(result['accessToken']);
       }
 
       return response.data;
@@ -64,9 +82,38 @@ class AuthService {
     }
   }
 
+  /// Lấy Firebase ID token sau khi đăng nhập Google
+  Future<String?> getFirebaseIdToken() async {
+    try {
+      final googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) return null;
+
+      final googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
+      final accessToken = googleAuth.accessToken;
+
+      if (idToken == null || accessToken == null) {
+        throw Exception('Không lấy được Google token');
+      }
+
+      final credential = GoogleAuthProvider.credential(
+        idToken: idToken,
+        accessToken: accessToken,
+      );
+      final userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
+
+      return await userCredential.user?.getIdToken();
+    } catch (e) {
+      if (kDebugMode) print('❌ Get Firebase Token Error: $e');
+      return null;
+    }
+  }
+
   /// Đăng xuất
   Future<void> signOut() async {
     await _googleSignIn.signOut();
+    await FirebaseAuth.instance.signOut();
     api.clearToken();
   }
 

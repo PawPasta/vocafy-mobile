@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../features/splash/splash_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/auth/login/login_screen.dart';
+import '../../features/home/home_screen.dart';
 import 'route_names.dart';
 
 /// Main app routes configuration
@@ -18,8 +19,8 @@ class AppRoutes {
       case RouteNames.onboarding:
         return _buildRoute(const OnboardingScreen());
       
-      // case RouteNames.home:
-      //   return _buildRoute(const HomePage());
+      case RouteNames.home:
+        return _buildRoute(const HomeScreen());
       
       case RouteNames.login:
         return _buildRoute(const LoginScreen());
