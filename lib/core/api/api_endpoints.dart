@@ -18,6 +18,21 @@ class Api {
   // ==================== Vocabulary Endpoints ====================
   static const String vocabularies = '/vocabularies';
 
+  // ==================== Syllabus Endpoints ====================
+  static const String syllabus = '/syllabus';
+
+  // ==================== Topic Endpoints ====================
+  static const String topics = '/topics';
+
+  /// Dùng: '${Api.topicsBySyllabus}/$syllabusId'
+  static const String topicsBySyllabus = '/topics/by-syllabus';
+
+  // ==================== Course Endpoints ====================
+  static const String courses = '/courses';
+
+  /// Dùng: '${Api.coursesByTopic}/$topicId'
+  static const String coursesByTopic = '/courses/by-topic';
+
   // ==================== Lesson Endpoints ====================
   static const String lessons = '/lessons';
 }

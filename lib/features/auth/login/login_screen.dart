@@ -17,7 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _isLoading = false;
 
-  Future<void> _onGoogleSignInPressed(BuildContext context) async {
+  Future<void> _onGoogleSignInPressed() async {
     if (_isLoading) return;
 
     setState(() => _isLoading = true);
@@ -54,14 +54,13 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Đăng nhập thất bại: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Đăng nhập thất bại: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -187,7 +186,7 @@ class _LoginScreenState extends State<LoginScreen> {
             borderRadius: BorderRadius.circular(14),
           ),
         ),
-        onPressed: _isLoading ? null : () => _onGoogleSignInPressed(context),
+        onPressed: _isLoading ? null : _onGoogleSignInPressed,
         child: _isLoading
             ? const SizedBox(
                 width: 24,

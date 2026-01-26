@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/api/api_client.dart';
 import '../../core/api/api_endpoints.dart';
+import '../../data/models/syllabus.dart';
+import '../../data/services/syllabus_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,6 +14,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late final Future<_ProfileData> _profileFuture;
+  late final Future<List<Syllabus>> _trialSyllabiFuture;
   final PageController _bannerController =
       PageController(viewportFraction: 0.92);
   Timer? _bannerTimer;
@@ -34,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _profileFuture = _fetchProfile();
+    _trialSyllabiFuture = syllabusService.listSyllabi(page: 0, size: 5);
     _bannerTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (_bannerImages.isEmpty || !_bannerController.hasClients) return;
       final nextPage = (_currentBanner + 1) % _bannerImages.length;
@@ -257,7 +261,7 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              'Category',
+              'Category >',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
             TextButton(
@@ -321,29 +325,62 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              'Trial Course',
+              'Trial Syllabus >',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
             TextButton(
               onPressed: () {},
-              child: const Text('see all'),
+              child: const Text('See all'),
             ),
           ],
         ),
         const SizedBox(height: 8),
-        _buildCourseCard(
-          title: 'Technical for IT Professionals',
-          language: 'English',
-          level: 'Beginner',
-        ),
-        const SizedBox(height: 12),
-        _buildCourseCard(
-          title: 'Technical for IT Professionals',
-          language: 'Japanese',
-          level: 'Middle',
+        FutureBuilder<List<Syllabus>>(
+          future: _trialSyllabiFuture,
+          builder: (context, snapshot) {
+            final items = (snapshot.data ?? const <Syllabus>[]).take(5).toList();
+
+            if (snapshot.connectionState == ConnectionState.waiting &&
+                items.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            if (items.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'Chưa có syllabus thử.',
+                  style: TextStyle(color: _textMuted),
+                ),
+              );
+            }
+
+            return Column(
+              children: [
+                for (int i = 0; i < items.length; i++) ...[
+                  _buildCourseCard(
+                    title: items[i].title,
+                    language: _displayLanguage(items[i].languageSet),
+                  ),
+                  if (i != items.length - 1) const SizedBox(height: 12),
+                ],
+              ],
+            );
+          },
         ),
       ],
     );
+  }
+
+  String _displayLanguage(String languageSet) {
+    final v = languageSet.toUpperCase();
+    if (v.contains('EN') && v.contains('JP')) return 'English • Japanese';
+    if (v.contains('EN')) return 'English';
+    if (v.contains('JP')) return 'Japanese';
+    return languageSet.isEmpty ? 'Unknown' : languageSet;
   }
 
   Widget _buildBannerCarousel() {
@@ -376,7 +413,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             begin: Alignment.bottomCenter,
                             end: Alignment.topCenter,
                             colors: [
-                              Colors.black.withOpacity(0.45),
+                              Colors.black.withAlpha(115),
                               Colors.transparent,
                             ],
                           ),
@@ -427,7 +464,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildCourseCard({
     required String title,
     required String language,
-    required String level,
   }) {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -463,8 +499,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   children: [
                     _buildCourseChip(language),
-                    const SizedBox(width: 8),
-                    _buildCourseChip(level),
                   ],
                 ),
               ],
