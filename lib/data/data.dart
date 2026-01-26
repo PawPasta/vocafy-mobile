@@ -8,8 +8,10 @@ export '../core/api/api_endpoints.dart';
 // Services
 export 'services/auth_service.dart';
 export 'services/syllabus_service.dart';
+export 'services/category_service.dart';
 
 // Models
 export 'models/api_response.dart';
 export 'models/page_response.dart';
 export 'models/syllabus.dart';
+export 'models/category.dart';

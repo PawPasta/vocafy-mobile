@@ -2,7 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/api/api_client.dart';
 import '../../core/api/api_endpoints.dart';
+import '../../data/models/category.dart';
 import '../../data/models/syllabus.dart';
+import '../../data/services/category_service.dart';
 import '../../data/services/syllabus_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -15,15 +17,18 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late final Future<_ProfileData> _profileFuture;
   late final Future<List<Syllabus>> _trialSyllabiFuture;
+  late final Future<List<AppCategory>> _categoriesFuture;
+  final PageController _categoryController = PageController();
   final PageController _bannerController =
       PageController(viewportFraction: 0.92);
   Timer? _bannerTimer;
   int _currentBanner = 0;
+  int _currentCategoryPage = 0;
 
   final List<String> _bannerImages = const [
-    'https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?w=1200&q=80',
-    'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=1200&q=80',
-    'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1200&q=80',
+    'https://i.pinimg.com/736x/cf/17/a2/cf17a21a1ccb69e4df352159e4e27736.jpg',
+    'https://i.pinimg.com/736x/e0/0c/bd/e00cbd85d41eb2cc7b5ebd4e054fb518.jpg',
+    'https://i.pinimg.com/1200x/f5/5a/52/f55a5271cbe4ee9fff695ccc1c4a1c0b.jpg',
   ];
 
   static const _primaryBlue = Color(0xFF4F6CFF);
@@ -38,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _profileFuture = _fetchProfile();
     _trialSyllabiFuture = syllabusService.listSyllabi(page: 0, size: 5);
+    _categoriesFuture = categoryService.listCategories(page: 0, size: 10);
     _bannerTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (_bannerImages.isEmpty || !_bannerController.hasClients) return;
       final nextPage = (_currentBanner + 1) % _bannerImages.length;
@@ -53,6 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _bannerTimer?.cancel();
     _bannerController.dispose();
+    _categoryController.dispose();
     super.dispose();
   }
 
@@ -271,49 +278,157 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildCategoryIcon(Icons.grid_view_rounded),
-            _buildCategoryIcon(Icons.monetization_on_outlined),
-            _buildCategoryIcon(Icons.science_outlined),
-            _buildCategoryIcon(Icons.favorite_border),
-            _buildCategoryIcon(Icons.play_circle_outline),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Center(
-          child: Container(
-            width: 46,
-            height: 6,
-            decoration: BoxDecoration(
-              color: const Color(0xFFDFE5FF),
-              borderRadius: BorderRadius.circular(99),
-            ),
-            alignment: Alignment.centerLeft,
-            child: Container(
-              width: 22,
-              height: 6,
-              decoration: BoxDecoration(
-                color: _primaryBlue,
-                borderRadius: BorderRadius.circular(99),
-              ),
-            ),
-          ),
+        FutureBuilder<List<AppCategory>>(
+          future: _categoriesFuture,
+          builder: (context, snapshot) {
+            final categories = snapshot.data ?? const <AppCategory>[];
+            final pageCount = (categories.length / 4).ceil();
+
+            if (snapshot.connectionState == ConnectionState.waiting &&
+                categories.isEmpty) {
+              return _buildCategoryLoadingRow();
+            }
+
+            if (categories.isEmpty) {
+              return _buildFallbackCategoryPager();
+            }
+
+            return Column(
+              children: [
+                SizedBox(
+                  height: 92,
+                  child: PageView.builder(
+                    controller: _categoryController,
+                    itemCount: pageCount,
+                    onPageChanged: (index) {
+                      setState(() => _currentCategoryPage = index);
+                    },
+                    itemBuilder: (context, pageIndex) {
+                      final start = pageIndex * 4;
+                      final end = (start + 4) > categories.length
+                          ? categories.length
+                          : (start + 4);
+                      final pageItems = categories.sublist(start, end);
+
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: List.generate(4, (i) {
+                          if (i < pageItems.length) {
+                            return _buildCategoryFromApi(pageItems[i]);
+                          }
+                          return const SizedBox(width: 84);
+                        }),
+                      );
+                    },
+                  ),
+                ),
+                if (pageCount > 1) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      pageCount,
+                      (index) => AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: _currentCategoryPage == index ? 16 : 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: _currentCategoryPage == index
+                              ? _primaryBlue
+                              : const Color(0xFFD7DEFF),
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            );
+          },
         ),
       ],
     );
   }
 
-  Widget _buildCategoryIcon(IconData icon) {
+  Widget _buildCategoryLoadingRow() {
+    return SizedBox(
+      height: 92,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: List.generate(4, (index) {
+          return SizedBox(
+            width: 84,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: _chipBlue,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: 64,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEEF2FF),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildFallbackCategoryPager() {
+    final icons = <IconData>[
+      Icons.grid_view_rounded,
+      Icons.monetization_on_outlined,
+      Icons.science_outlined,
+      Icons.favorite_border,
+      Icons.play_circle_outline,
+    ];
+    final pageCount = (icons.length / 4).ceil();
+
+    return SizedBox(
+      height: 92,
+      child: PageView.builder(
+        itemCount: pageCount,
+        itemBuilder: (context, pageIndex) {
+          final start = pageIndex * 4;
+          final end = (start + 4) > icons.length ? icons.length : (start + 4);
+          final pageItems = icons.sublist(start, end);
+
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(4, (i) {
+              if (i < pageItems.length) {
+                return _buildCategoryIcon(pageItems[i], size: 56);
+              }
+              return const SizedBox(width: 84);
+            }),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCategoryIcon(IconData icon, {double size = 48}) {
     return Container(
-      width: 48,
-      height: 48,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         color: _chipBlue,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
       ),
-      child: Icon(icon, color: _primaryBlue),
+      child: Icon(icon, color: _primaryBlue, size: size * 0.55),
     );
   }
 
@@ -423,7 +538,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         left: 16,
                         bottom: 16,
                         child: Text(
-                          'Special offer for you',
+                          '',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 14,
@@ -511,6 +626,65 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildCategoryFromApi(AppCategory category) {
+    return SizedBox(
+      width: 84,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: _chipBlue,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Center(
+              child: Text(
+                _categoryAbbrev(category.name),
+                style: const TextStyle(
+                  color: _primaryBlue,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            category.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: _textMuted,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _categoryAbbrev(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return '?';
+
+    final words = trimmed
+        .split(RegExp(r'\s+'))
+        .where((w) => w.trim().isNotEmpty)
+        .toList();
+    if (words.length >= 2) {
+      final a = words[0].substring(0, 1);
+      final b = words[1].substring(0, 1);
+      return ('$a$b').toUpperCase();
+    }
+
+    final upper = trimmed.toUpperCase();
+    return upper.length >= 2 ? upper.substring(0, 2) : upper;
   }
 
   Widget _buildCourseChip(String label) {

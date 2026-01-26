@@ -33,6 +33,9 @@ class Api {
   /// Dùng: '${Api.coursesByTopic}/$topicId'
   static const String coursesByTopic = '/courses/by-topic';
 
+  // ==================== Category Endpoints ====================
+  static const String categories = '/categories';
+
   // ==================== Lesson Endpoints ====================
   static const String lessons = '/lessons';
 }
