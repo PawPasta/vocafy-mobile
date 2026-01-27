@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../core/api/api_client.dart';
 import '../../core/api/api_endpoints.dart';
+import '../../core/storage/token_storage.dart';
 
 /// Auth Service đơn giản
 /// Xử lý Google Sign-In và gọi API
@@ -36,8 +37,9 @@ class AuthService {
         idToken: idToken,
         accessToken: accessToken,
       );
-      final userCredential =
-          await FirebaseAuth.instance.signInWithCredential(credential);
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
 
       // 4. Lấy Firebase ID token để gửi server
       final firebaseIdToken = await userCredential.user?.getIdToken();
@@ -52,13 +54,27 @@ class AuthService {
       }
 
       // 5. Gửi Firebase ID token lên server
-        final response =
-          await api.post(Api.loginGoogle, {'id_token': firebaseIdToken});
+      final fcmToken = await tokenStorage.getFcmToken();
+      final response = await api.post(Api.loginGoogle, {
+        'id_token': firebaseIdToken,
+        'fcm_token': fcmToken ?? '',
+      });
 
       // 4. Lưu token từ server (nếu có)
       final result = response.data['result'];
-      if (result is Map && result['accessToken'] != null) {
-        api.setToken(result['accessToken']);
+      if (result is Map) {
+        final accessToken = (result['accessToken'] ?? result['access_token'])
+            ?.toString();
+        final refreshToken = (result['refreshToken'] ?? result['refresh_token'])
+            ?.toString();
+
+        if (accessToken != null && accessToken.isNotEmpty) {
+          await tokenStorage.setAccessToken(accessToken);
+          api.setToken(accessToken);
+        }
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          await tokenStorage.setRefreshToken(refreshToken);
+        }
       }
 
       return response.data;
@@ -100,8 +116,9 @@ class AuthService {
         idToken: idToken,
         accessToken: accessToken,
       );
-      final userCredential =
-          await FirebaseAuth.instance.signInWithCredential(credential);
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
 
       return await userCredential.user?.getIdToken();
     } catch (e) {
@@ -115,6 +132,7 @@ class AuthService {
     await _googleSignIn.signOut();
     await FirebaseAuth.instance.signOut();
     api.clearToken();
+    await tokenStorage.clearAuthTokens();
   }
 
   /// Kiểm tra đã đăng nhập Google chưa

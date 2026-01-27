@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../data/data.dart';
 import '../../../config/routes/route_names.dart';
+import '../../../core/storage/token_storage.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -32,9 +33,12 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-        // 2. Gửi Firebase ID token về server dạng JSON body
-          final response =
-            await api.post(Api.loginGoogle, {'id_token': firebaseIdToken});
+      // 2. Gửi Firebase ID token + FCM token về server
+      final fcmToken = await tokenStorage.getFcmToken();
+      final response = await api.post(Api.loginGoogle, {
+        'id_token': firebaseIdToken,
+        'fcm_token': fcmToken ?? '',
+      });
 
       if (!mounted) return;
 
@@ -42,8 +46,19 @@ class _LoginScreenState extends State<LoginScreen> {
       if (response.data != null) {
         // Lưu access token từ server (nếu có)
         final result = response.data['result'];
-        if (result is Map && result['accessToken'] != null) {
-          api.setToken(result['accessToken']);
+        if (result is Map) {
+          final accessToken = (result['accessToken'] ?? result['access_token'])
+              ?.toString();
+          final refreshToken =
+              (result['refreshToken'] ?? result['refresh_token'])?.toString();
+
+          if (accessToken != null && accessToken.isNotEmpty) {
+            await tokenStorage.setAccessToken(accessToken);
+            api.setToken(accessToken);
+          }
+          if (refreshToken != null && refreshToken.isNotEmpty) {
+            await tokenStorage.setRefreshToken(refreshToken);
+          }
         }
 
         // Thành công - chuyển đến home

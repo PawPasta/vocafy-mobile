@@ -9,6 +9,7 @@ class Api {
 
   // ==================== Auth Endpoints ====================
   static const String loginGoogle = '/auth/firebase';
+  static const String refresh = '/auth/refresh';
   static const String logout = '/auth/logout';
   static const String profile = '/profiles/me';
 
@@ -35,7 +36,4 @@ class Api {
 
   // ==================== Category Endpoints ====================
   static const String categories = '/categories';
-
-  // ==================== Lesson Endpoints ====================
-  static const String lessons = '/lessons';
 }

@@ -1,14 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_options.dart';
 import 'config/routes/routes.dart';
 import 'config/routes/route_names.dart';
 
+import 'core/api/api_client.dart';
+import 'core/notifications/notification_service.dart';
+import 'core/storage/token_storage.dart';
+
+final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+
+final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Push Notification (background)
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+  // Init push notifications + FCM token caching
+  notificationService.attachNavigatorKey(_navigatorKey);
+  await notificationService.init();
+
+  // Load persisted access token for default Authorization header
+  final accessToken = await tokenStorage.getAccessToken();
+  if (accessToken != null && accessToken.isNotEmpty) {
+    api.setToken(accessToken);
+  }
+
   runApp(const MyApp());
 }
 
@@ -20,6 +42,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Vocafy',
       debugShowCheckedModeBanner: false,
+      scaffoldMessengerKey: _scaffoldMessengerKey,
+      navigatorKey: _navigatorKey,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF5B7FFF)),
         useMaterial3: true,
