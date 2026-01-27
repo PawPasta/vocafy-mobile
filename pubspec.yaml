@@ -38,12 +38,10 @@ dependencies:
   # Icons (Google icon)
   font_awesome_flutter: ^10.7.0
   firebase_core: ^2.32.0
+  firebase_auth: ^4.6.5
 
   # Google Sign-In
   google_sign_in: ^6.2.2
-
-  # Firebase Auth
-  firebase_auth: ^4.20.0
 
   # HTTP client
   dio: ^5.4.0
