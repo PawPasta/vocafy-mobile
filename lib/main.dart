@@ -6,6 +6,7 @@ import 'config/routes/routes.dart';
 import 'config/routes/route_names.dart';
 
 import 'core/api/api_client.dart';
+import 'core/navigation/app_navigation_service.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/storage/token_storage.dart';
 
@@ -23,6 +24,7 @@ Future<void> main() async {
 
   // Init push notifications + FCM token caching
   notificationService.attachNavigatorKey(_navigatorKey);
+  appNavigationService.attachNavigatorKey(_navigatorKey);
   await notificationService.init();
 
   // Load persisted access token for default Authorization header

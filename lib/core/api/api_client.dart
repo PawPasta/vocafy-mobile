@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'api_endpoints.dart';
+import '../navigation/app_navigation_service.dart';
 import '../storage/token_storage.dart';
 
 /// API Client đơn giản
@@ -13,6 +14,7 @@ class ApiClient {
   late final Dio _refreshDio;
 
   Future<bool>? _refreshing;
+  bool _forceLogoutInProgress = false;
 
   ApiClient._() {
     _dio = Dio(
@@ -52,6 +54,23 @@ class ApiClient {
           final statusCode = error.response?.statusCode;
           final request = error.requestOptions;
 
+          // If refresh token itself is invalid/expired, immediately force logout.
+          final isRefreshCall = request.path.endsWith(Api.refresh);
+          if (isRefreshCall && _isAuthInvalidError(error)) {
+            await _forceLogoutToLogin();
+            return handler.next(error);
+          }
+
+          // For non-refresh calls, attempt refresh only once. If refresh fails,
+          // default to login as requested.
+          if (_isAuthInvalidError(error) && !_shouldAttemptRefresh(request)) {
+            // Avoid forcing logout for login endpoint.
+            if (!request.path.endsWith(Api.loginGoogle)) {
+              await _forceLogoutToLogin();
+            }
+            return handler.next(error);
+          }
+
           final shouldTryRefresh =
               statusCode == 401 && _shouldAttemptRefresh(request);
           if (!shouldTryRefresh) {
@@ -60,6 +79,7 @@ class ApiClient {
 
           final refreshed = await _refreshAccessToken();
           if (!refreshed) {
+            await _forceLogoutToLogin();
             return handler.next(error);
           }
 
@@ -80,6 +100,39 @@ class ApiClient {
         },
       ),
     );
+  }
+
+  bool _isAuthInvalidError(DioException error) {
+    final statusCode = error.response?.statusCode;
+    if (statusCode == 401 || statusCode == 403) return true;
+
+    // Best-effort: some backends return 400/200 with message like "token expired".
+    final data = error.response?.data;
+    if (data is Map) {
+      final msg = (data['message'] ?? data['error'] ?? '')
+          .toString()
+          .toLowerCase();
+      if (msg.contains('token') &&
+          (msg.contains('expired') || msg.contains('invalid'))) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  Future<void> _forceLogoutToLogin() async {
+    if (_forceLogoutInProgress) return;
+    _forceLogoutInProgress = true;
+
+    try {
+      clearToken();
+      await tokenStorage.clearAuthTokens();
+    } catch (_) {
+      // Best effort.
+    }
+
+    appNavigationService.goToLogin();
   }
 
   /// Set token vào header
