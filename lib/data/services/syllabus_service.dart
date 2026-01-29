@@ -51,6 +51,19 @@ class SyllabusService {
       return const <Syllabus>[];
     }
   }
+
+  Future<Map<String, dynamic>?> getSyllabusById(int id) async {
+    try {
+      final response = await api.get('${Api.syllabus}/$id');
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['result'] is Map<String, dynamic>) {
+        return data['result'] as Map<String, dynamic>;
+      }
+    } catch (e) {
+      if (kDebugMode) print('❌ getSyllabusById error: $e');
+    }
+    return null;
+  }
 }
 
 final syllabusService = SyllabusService.instance;

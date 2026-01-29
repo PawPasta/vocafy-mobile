@@ -3,6 +3,7 @@ import '../../features/splash/splash_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/auth/login/login_screen.dart';
 import '../../features/home/home_screen.dart';
+import '../../features/profile/profile_screen.dart';
 import 'route_names.dart';
 
 /// Main app routes configuration
@@ -24,6 +25,9 @@ class AppRoutes {
       
       case RouteNames.login:
         return _buildRoute(const LoginScreen());
+
+      case RouteNames.profile:
+        return _buildRoute(const ProfileScreen());
       
       default:
         return _buildRoute(

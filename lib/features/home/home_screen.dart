@@ -5,7 +5,9 @@ import '../../core/api/api_endpoints.dart';
 import '../../data/models/category.dart';
 import '../../data/models/syllabus.dart';
 import '../../data/services/category_service.dart';
+import '../../config/routes/route_names.dart';
 import '../../data/services/syllabus_service.dart';
+import '../syllabus/syllabus_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,6 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _bannerTimer;
   int _currentBanner = 0;
   int _currentCategoryPage = 0;
+  int _selectedIndex = 0;
 
   final List<String> _bannerImages = const [
     'https://i.pinimg.com/736x/cf/17/a2/cf17a21a1ccb69e4df352159e4e27736.jpg',
@@ -135,27 +138,30 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: _headerIconShadow,
-                          blurRadius: 8,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: CircleAvatar(
-                      radius: 28,
-                      backgroundColor: Colors.transparent,
-                      backgroundImage:
-                          photoUrl == null ? null : NetworkImage(photoUrl),
-                      child: photoUrl == null
-                          ? const Icon(Icons.person, color: _primaryBlue)
-                          : null,
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pushNamed(RouteNames.profile),
+                    child: Container(
+                      width: 56,
+                      height: 56,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: _headerIconShadow,
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: CircleAvatar(
+                        radius: 28,
+                        backgroundColor: Colors.transparent,
+                        backgroundImage:
+                            photoUrl == null ? null : NetworkImage(photoUrl),
+                        child: photoUrl == null
+                            ? const Icon(Icons.person, color: _primaryBlue)
+                            : null,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -476,9 +482,17 @@ class _HomeScreenState extends State<HomeScreen> {
             return Column(
               children: [
                 for (int i = 0; i < items.length; i++) ...[
-                  _buildCourseCard(
-                    title: items[i].title,
-                    language: _displayLanguage(items[i].languageSet),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => SyllabusDetailScreen(syllabusId: items[i].id),
+                      ));
+                    },
+                    child: _buildCourseCard(
+                      syllabusId: items[i].id,
+                      title: items[i].title,
+                      language: _displayLanguage(items[i].languageSet),
+                    ),
                   ),
                   if (i != items.length - 1) const SizedBox(height: 12),
                 ],
@@ -577,6 +591,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCourseCard({
+    required int syllabusId,
     required String title,
     required String language,
   }) {
@@ -719,27 +734,11 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildBottomItem(
-                icon: Icons.home,
-                label: 'Home',
-                isActive: true,
-              ),
-              _buildBottomItem(
-                icon: Icons.smart_toy_outlined,
-                label: 'AI',
-              ),
-              _buildBottomItem(
-                icon: Icons.book_outlined,
-                label: 'Vocab',
-              ),
-              _buildBottomItem(
-                icon: Icons.school_outlined,
-                label: 'Course',
-              ),
-              _buildBottomItem(
-                icon: Icons.person_outline,
-                label: 'Profile',
-              ),
+              _buildBottomItem(icon: Icons.home, label: 'Home', index: 0),
+              _buildBottomItem(icon: Icons.smart_toy_outlined, label: 'AI', index: 1),
+              _buildBottomItem(icon: Icons.book_outlined, label: 'Vocab', index: 2),
+              _buildBottomItem(icon: Icons.school_outlined, label: 'Course', index: 3),
+              _buildBottomItem(icon: Icons.person_outline, label: 'Profile', index: 4),
             ],
           ),
         ),
@@ -750,39 +749,50 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBottomItem({
     required IconData icon,
     required String label,
-    bool isActive = false,
+    required int index,
   }) {
-    return Transform.translate(
-      offset: Offset(0, isActive ? -8 : 0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (isActive)
-            Transform.translate(
-              offset: const Offset(0, -3),
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: _primaryBlue, width: 2),
+    final isActive = _selectedIndex == index;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedIndex = index;
+        });
+        if (index == 4) {
+          Navigator.of(context).pushNamed(RouteNames.profile);
+        }
+      },
+      child: Transform.translate(
+        offset: Offset(0, isActive ? -8 : 0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isActive)
+              Transform.translate(
+                offset: const Offset(0, -3),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: _primaryBlue, width: 2),
+                  ),
+                  child: Icon(icon, color: _primaryBlue, size: 28),
                 ),
-                child: Icon(icon, color: _primaryBlue, size: 28),
-              ),
-            )
-          else
+              )
+            else
               Icon(icon, color: Colors.white, size: 28),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14.5,
-              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 14.5,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
