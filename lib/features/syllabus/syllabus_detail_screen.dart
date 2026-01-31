@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/services/syllabus_service.dart';
 import '../../data/models/syllabus_detail.dart';
+import '../topic/topic_detail_screen.dart';
 
 class SyllabusDetailScreen extends StatefulWidget {
   final int syllabusId;
@@ -13,6 +14,9 @@ class SyllabusDetailScreen extends StatefulWidget {
 
 class _SyllabusDetailScreenState extends State<SyllabusDetailScreen> {
   late final Future<SyllabusDetail?> _detailFuture;
+
+  static const _primaryBlue = Color(0xFF4F6CFF);
+  static const _primaryBlueDark = Color(0xFF3F5BFF);
 
   @override
   void initState() {
@@ -49,6 +53,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Header with background image
                       Stack(
                         children: [
                           Container(
@@ -68,7 +73,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen> {
                               ),
                             ),
                           ),
-                          // Semi-transparent overlay to make a gray box effect when image exists
+                          // Gradient overlay
                           Container(
                             height: 180,
                             width: double.infinity,
@@ -87,6 +92,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen> {
                               ),
                             ),
                           ),
+                          // Back button
                           Positioned(
                             left: 12,
                             top: 12,
@@ -98,6 +104,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen> {
                               ),
                             ),
                           ),
+                          // Fire icon
                           Positioned(
                             right: 12,
                             top: 12,
@@ -109,19 +116,19 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen> {
                               ),
                             ),
                           ),
-                          Positioned(
-                            left: 16,
-                            bottom: 16,
-                            child: Text(
-                              s.title,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ),
                         ],
+                      ),
+                      const SizedBox(height: 12),
+                      // Title
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          s.title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 12),
                       Padding(
@@ -132,6 +139,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen> {
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                // Stats column
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -164,9 +172,25 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen> {
                                         ),
                                       ],
                                     ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.bar_chart, size: 18, color: Color(0xFF1F2937)),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          s.categoryName.isNotEmpty ? s.categoryName : 'General',
+                                          style: const TextStyle(
+                                            color: Color(0xFF1F2937),
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ],
                                 ),
                                 const SizedBox(width: 20),
+                                // Description
                                 Expanded(
                                   child: Text(
                                     s.description,
@@ -177,43 +201,71 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 12),
-                            // Progress bar above Enroll button
-                            Center(
-                              child: Container(
-                                width: double.infinity,
-                                height: 10,
-                                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFEAF0FF),
-                                  borderRadius: BorderRadius.circular(99),
-                                ),
-                                child: FractionallySizedBox(
-                                  alignment: Alignment.centerLeft,
-                                  widthFactor: 0.3, // placeholder progress (30%)
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF4F6CFF),
-                                      borderRadius: BorderRadius.circular(99),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 16),
+                            // Enroll button
                             Center(
                               child: ElevatedButton(
                                 onPressed: () {},
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF4F6CFF),
-                                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  backgroundColor: _primaryBlue,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                 ),
                                 child: const Text('Enroll', style: TextStyle(fontWeight: FontWeight.w600)),
                               ),
                             ),
                             const SizedBox(height: 12),
-                            const Text('Topics >', style: TextStyle(fontWeight: FontWeight.w700)),
+                            // Learn and Test buttons
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {
+                                      // TODO: Navigate to learning screen
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Bắt đầu học...')),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.school_outlined, size: 20),
+                                    label: const Text('Học', style: TextStyle(fontWeight: FontWeight.w600)),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {
+                                      // TODO: Navigate to test screen
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Bắt đầu kiểm tra...')),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.quiz_outlined, size: 20),
+                                    label: const Text('Kiểm tra', style: TextStyle(fontWeight: FontWeight.w600)),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.orange,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            // Divider
+                            Container(
+                              height: 1,
+                              color: Colors.grey.shade200,
+                            ),
+                            const SizedBox(height: 16),
+                            const Text('Course >', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                           ],
                         ),
                       ),
@@ -221,51 +273,94 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen> {
                     ],
                   ),
                 ),
+                // Topics/Courses list
                 SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
-                      // flatten courses across topics for simple display
-                      final courses = _allCourses(s);
-                      final c = courses[index];
+                      final topics = s.topics;
+                      if (index >= topics.length) return null;
+                      
+                      final topic = topics[index];
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF4F6CFF),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 48,
-                                height: 48,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) => TopicDetailScreen(topicId: topic.id),
+                            ));
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: _primaryBlue,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              children: [
+                                // Icon container
+                                Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(Icons.topic_outlined, color: _primaryBlue),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                const SizedBox(width: 12),
+                                // Text content
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        topic.title,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${topic.courses.length} lessons',
+                                        style: TextStyle(
+                                          color: Colors.white.withOpacity(0.8),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Menu and play buttons
+                                Row(
                                   children: [
-                                    Text(c.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-                                    const SizedBox(height: 6),
-                                    Text(c.description, style: const TextStyle(color: Color(0xFFDDE3FF))),
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: _primaryBlueDark,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(Icons.more_horiz, color: Colors.white, size: 18),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: _primaryBlueDark,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(Icons.play_arrow, color: Colors.white, size: 18),
+                                    ),
                                   ],
                                 ),
-                              ),
-                              IconButton(
-                                onPressed: () {},
-                                icon: const Icon(Icons.play_circle_fill, color: Colors.white),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       );
                     },
-                    childCount: _allCourses(s).length,
+                    childCount: s.topics.length,
                   ),
                 ),
                 const SliverToBoxAdapter(child: SizedBox(height: 40)),
@@ -274,16 +369,81 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen> {
           },
         ),
       ),
+      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
-  int _countCourses(SyllabusDetail s) => _allCourses(s).length;
-
-  List<SyllabusCourse> _allCourses(SyllabusDetail s) {
-    final list = <SyllabusCourse>[];
+  int _countCourses(SyllabusDetail s) {
+    int count = 0;
     for (final t in s.topics) {
-      list.addAll(t.courses);
+      count += t.courses.length;
     }
-    return list;
+    return count;
+  }
+
+  Widget _buildBottomNav() {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        child: Container(
+          height: 72,
+          decoration: BoxDecoration(
+            color: _primaryBlue,
+            borderRadius: BorderRadius.circular(32),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildBottomItem(icon: Icons.home, label: 'Home', isActive: false),
+              _buildBottomItem(icon: Icons.smart_toy_outlined, label: 'AI', isActive: false),
+              _buildBottomItem(icon: Icons.book_outlined, label: 'Vocab', isActive: false),
+              _buildBottomItem(icon: Icons.school_outlined, label: 'Course', isActive: true),
+              _buildBottomItem(icon: Icons.person_outline, label: 'Profile', isActive: false),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomItem({
+    required IconData icon,
+    required String label,
+    required bool isActive,
+  }) {
+    return Transform.translate(
+      offset: Offset(0, isActive ? -8 : 0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (isActive)
+            Transform.translate(
+              offset: const Offset(0, -3),
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: _primaryBlue, width: 2),
+                ),
+                child: Icon(icon, color: _primaryBlue, size: 28),
+              ),
+            )
+          else
+            Icon(icon, color: Colors.white, size: 28),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14.5,
+              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

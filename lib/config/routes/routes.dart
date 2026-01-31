@@ -4,6 +4,10 @@ import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/auth/login/login_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/profile/profile_screen.dart';
+import '../../features/syllabus/syllabus_detail_screen.dart';
+import '../../features/topic/topic_detail_screen.dart';
+import '../../features/course/course_detail_screen.dart';
+import '../../features/vocabulary/vocabulary_detail_screen.dart';
 import 'route_names.dart';
 
 /// Main app routes configuration
@@ -28,6 +32,34 @@ class AppRoutes {
 
       case RouteNames.profile:
         return _buildRoute(const ProfileScreen());
+      
+      case RouteNames.syllabusDetail:
+        final syllabusId = settings.arguments as int?;
+        if (syllabusId == null) {
+          return _buildRoute(_ErrorScreen(routeName: 'syllabusDetail: missing id'));
+        }
+        return _buildRoute(SyllabusDetailScreen(syllabusId: syllabusId));
+      
+      case RouteNames.topicDetail:
+        final topicId = settings.arguments as int?;
+        if (topicId == null) {
+          return _buildRoute(_ErrorScreen(routeName: 'topicDetail: missing id'));
+        }
+        return _buildRoute(TopicDetailScreen(topicId: topicId));
+      
+      case RouteNames.courseDetail:
+        final courseId = settings.arguments as int?;
+        if (courseId == null) {
+          return _buildRoute(_ErrorScreen(routeName: 'courseDetail: missing id'));
+        }
+        return _buildRoute(CourseDetailScreen(courseId: courseId));
+      
+      case RouteNames.vocabularyDetail:
+        final vocabularyId = settings.arguments as int?;
+        if (vocabularyId == null) {
+          return _buildRoute(_ErrorScreen(routeName: 'vocabularyDetail: missing id'));
+        }
+        return _buildRoute(VocabularyDetailScreen(vocabularyId: vocabularyId));
       
       default:
         return _buildRoute(

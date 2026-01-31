@@ -36,4 +36,8 @@ class Api {
 
   // ==================== Category Endpoints ====================
   static const String categories = '/categories';
+
+  // ==================== Vocabularies by Course ====================
+  /// Dùng: '${Api.vocabulariesByCourse}/$courseId'
+  static const String vocabulariesByCourse = '/vocabularies/by-course';
 }
