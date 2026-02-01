@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/services/syllabus_service.dart';
 import '../../data/models/syllabus_detail.dart';
+import '../../config/routes/route_names.dart';
 import '../topic/topic_detail_screen.dart';
 
 class SyllabusDetailScreen extends StatefulWidget {
@@ -202,20 +203,6 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen> {
                               ],
                             ),
                             const SizedBox(height: 16),
-                            // Enroll button
-                            Center(
-                              child: ElevatedButton(
-                                onPressed: () {},
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: _primaryBlue,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                ),
-                                child: const Text('Enroll', style: TextStyle(fontWeight: FontWeight.w600)),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
                             // Learn and Test buttons
                             Row(
                               children: [
@@ -228,7 +215,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen> {
                                       );
                                     },
                                     icon: const Icon(Icons.school_outlined, size: 20),
-                                    label: const Text('Học', style: TextStyle(fontWeight: FontWeight.w600)),
+                                    label: const Text('Study', style: TextStyle(fontWeight: FontWeight.w600)),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.green,
                                       foregroundColor: Colors.white,
@@ -247,7 +234,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen> {
                                       );
                                     },
                                     icon: const Icon(Icons.quiz_outlined, size: 20),
-                                    label: const Text('Kiểm tra', style: TextStyle(fontWeight: FontWeight.w600)),
+                                    label: const Text('Test', style: TextStyle(fontWeight: FontWeight.w600)),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.orange,
                                       foregroundColor: Colors.white,
@@ -395,11 +382,15 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildBottomItem(icon: Icons.home, label: 'Home', isActive: false),
-              _buildBottomItem(icon: Icons.smart_toy_outlined, label: 'AI', isActive: false),
-              _buildBottomItem(icon: Icons.book_outlined, label: 'Vocab', isActive: false),
-              _buildBottomItem(icon: Icons.school_outlined, label: 'Course', isActive: true),
-              _buildBottomItem(icon: Icons.person_outline, label: 'Profile', isActive: false),
+              _buildBottomItem(icon: Icons.home, label: 'Home', isActive: false, onTap: () {
+                Navigator.of(context).pushNamedAndRemoveUntil(RouteNames.home, (route) => false);
+              }),
+              _buildBottomItem(icon: Icons.smart_toy_outlined, label: 'AI', isActive: false, onTap: () {}),
+              _buildBottomItem(icon: Icons.book_outlined, label: 'Vocab', isActive: false, onTap: () {}),
+              _buildBottomItem(icon: Icons.school_outlined, label: 'Course', isActive: true, onTap: () {}),
+              _buildBottomItem(icon: Icons.person_outline, label: 'Profile', isActive: false, onTap: () {
+                Navigator.of(context).pushNamed(RouteNames.profile);
+              }),
             ],
           ),
         ),
@@ -411,10 +402,13 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen> {
     required IconData icon,
     required String label,
     required bool isActive,
+    VoidCallback? onTap,
   }) {
-    return Transform.translate(
-      offset: Offset(0, isActive ? -8 : 0),
-      child: Column(
+    return GestureDetector(
+      onTap: onTap,
+      child: Transform.translate(
+        offset: Offset(0, isActive ? -8 : 0),
+        child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (isActive)
@@ -443,6 +437,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

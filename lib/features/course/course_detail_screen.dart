@@ -3,6 +3,7 @@ import '../../data/services/course_service.dart';
 import '../../data/services/vocabulary_service.dart';
 import '../../data/models/course.dart';
 import '../../data/models/vocabulary.dart';
+import '../../config/routes/route_names.dart';
 import '../vocabulary/vocabulary_detail_screen.dart';
 
 class CourseDetailScreen extends StatefulWidget {
@@ -256,11 +257,15 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildBottomItem(icon: Icons.home, label: 'Home', isActive: false),
-              _buildBottomItem(icon: Icons.smart_toy_outlined, label: 'AI', isActive: false),
-              _buildBottomItem(icon: Icons.book_outlined, label: 'Vocab', isActive: true),
-              _buildBottomItem(icon: Icons.school_outlined, label: 'Course', isActive: false),
-              _buildBottomItem(icon: Icons.person_outline, label: 'Profile', isActive: false),
+              _buildBottomItem(icon: Icons.home, label: 'Home', isActive: false, onTap: () {
+                Navigator.of(context).pushNamedAndRemoveUntil(RouteNames.home, (route) => false);
+              }),
+              _buildBottomItem(icon: Icons.smart_toy_outlined, label: 'AI', isActive: false, onTap: () {}),
+              _buildBottomItem(icon: Icons.book_outlined, label: 'Vocab', isActive: true, onTap: () {}),
+              _buildBottomItem(icon: Icons.school_outlined, label: 'Course', isActive: false, onTap: () {}),
+              _buildBottomItem(icon: Icons.person_outline, label: 'Profile', isActive: false, onTap: () {
+                Navigator.of(context).pushNamed(RouteNames.profile);
+              }),
             ],
           ),
         ),
@@ -272,38 +277,42 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     required IconData icon,
     required String label,
     required bool isActive,
+    VoidCallback? onTap,
   }) {
-    return Transform.translate(
-      offset: Offset(0, isActive ? -8 : 0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (isActive)
-            Transform.translate(
-              offset: const Offset(0, -3),
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: _primaryBlue, width: 2),
+    return GestureDetector(
+      onTap: onTap,
+      child: Transform.translate(
+        offset: Offset(0, isActive ? -8 : 0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isActive)
+              Transform.translate(
+                offset: const Offset(0, -3),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: _primaryBlue, width: 2),
+                  ),
+                  child: Icon(icon, color: _primaryBlue, size: 28),
                 ),
-                child: Icon(icon, color: _primaryBlue, size: 28),
+              )
+            else
+              Icon(icon, color: Colors.white, size: 28),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 14.5,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
               ),
-            )
-          else
-            Icon(icon, color: Colors.white, size: 28),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14.5,
-              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
