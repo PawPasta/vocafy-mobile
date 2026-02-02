@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "1760570910-pjq39nteajq4d3105u0ebrkh90fhvo57.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.exe201.vocafy_mobile",
+            "certificate_hash": "bc1a87f57831634b547be13c2c571a70c5b6424c"
+          }
+        },
+        {
           "client_id": "1760570910-9n3sra2q84pnc63hfl4m97jpi4j05a95.apps.googleusercontent.com",
           "client_type": 3
         }
