@@ -9,6 +9,8 @@ class TokenStorage {
   static const _kAccessTokenKey = 'access_token';
   static const _kRefreshTokenKey = 'refresh_token';
   static const _kFcmTokenKey = 'fcm_token';
+  static const _kFocusedSyllabusIdKey = 'focused_syllabus_id';
+  static const _kFocusedSyllabusLoadedKey = 'focused_syllabus_loaded';
 
   SharedPreferences? _prefs;
 
@@ -62,6 +64,41 @@ class TokenStorage {
     final prefs = await _getPrefs();
     await prefs.remove(_kAccessTokenKey);
     await prefs.remove(_kRefreshTokenKey);
+  }
+
+  /// Set focused syllabus ID
+  Future<void> setFocusedSyllabusId(int? value) async {
+    final prefs = await _getPrefs();
+    if (value == null) {
+      await prefs.remove(_kFocusedSyllabusIdKey);
+      return;
+    }
+    await prefs.setInt(_kFocusedSyllabusIdKey, value);
+  }
+
+  /// Get focused syllabus ID
+  Future<int?> getFocusedSyllabusId() async {
+    final prefs = await _getPrefs();
+    return prefs.getInt(_kFocusedSyllabusIdKey);
+  }
+
+  /// Check if focused syllabus has been loaded (first time login)
+  Future<bool> isFocusedSyllabusLoaded() async {
+    final prefs = await _getPrefs();
+    return prefs.getBool(_kFocusedSyllabusLoadedKey) ?? false;
+  }
+
+  /// Mark focused syllabus as loaded
+  Future<void> setFocusedSyllabusLoaded(bool value) async {
+    final prefs = await _getPrefs();
+    await prefs.setBool(_kFocusedSyllabusLoadedKey, value);
+  }
+
+  /// Clear focused syllabus data (call on logout)
+  Future<void> clearFocusedSyllabus() async {
+    final prefs = await _getPrefs();
+    await prefs.remove(_kFocusedSyllabusIdKey);
+    await prefs.remove(_kFocusedSyllabusLoadedKey);
   }
 }
 

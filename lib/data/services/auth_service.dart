@@ -148,6 +148,7 @@ class AuthService {
     await FirebaseAuth.instance.signOut();
     api.clearToken();
     await tokenStorage.clearAuthTokens();
+    await tokenStorage.clearFocusedSyllabus();
   }
 
   /// Kiểm tra đã đăng nhập Google chưa
