@@ -2,9 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/api/api_client.dart';
 import '../../core/api/api_endpoints.dart';
+import '../../core/storage/token_storage.dart';
 import '../../data/models/category.dart';
 import '../../data/models/syllabus.dart';
+import '../../data/models/enrollment.dart';
 import '../../data/services/category_service.dart';
+import '../../data/services/enrollment_service.dart';
 import '../../config/routes/route_names.dart';
 import '../../data/services/syllabus_service.dart';
 import '../syllabus/syllabus_detail_screen.dart';
@@ -21,6 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late final Future<_ProfileData> _profileFuture;
   late final Future<List<Syllabus>> _trialSyllabiFuture;
   late final Future<List<AppCategory>> _categoriesFuture;
+  late final Future<List<Enrollment>> _enrollmentsFuture;
   final PageController _categoryController = PageController();
   final PageController _bannerController = PageController(
     viewportFraction: 0.92,
@@ -42,13 +46,16 @@ class _HomeScreenState extends State<HomeScreen> {
   static const _textDark = Color(0xFF1A1A1A);
   static const _textMuted = Color(0xFF6B7280);
   static const _headerIconShadow = Color(0x1A000000);
+  static const _enrolledGreen = Color(0xFF4CAF50);
 
   @override
   void initState() {
     super.initState();
     _profileFuture = _fetchProfile();
-    _trialSyllabiFuture = syllabusService.listSyllabi(page: 0, size: 5);
+    _trialSyllabiFuture = syllabusService.listSyllabi(page: 0, size: 10);
     _categoriesFuture = categoryService.listCategories(page: 0, size: 10);
+    _enrollmentsFuture = enrollmentService.listEnrollments(page: 0, size: 20);
+    _loadFocusedSyllabusIfNeeded();
     _bannerTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (_bannerImages.isEmpty || !_bannerController.hasClients) return;
       final nextPage = (_currentBanner + 1) % _bannerImages.length;
@@ -58,6 +65,23 @@ class _HomeScreenState extends State<HomeScreen> {
         curve: Curves.easeInOut,
       );
     });
+  }
+
+  /// Load focused syllabus ID from API and save to storage on first login
+  /// This runs in the background without blocking UI
+  Future<void> _loadFocusedSyllabusIfNeeded() async {
+    // Check if already loaded to avoid redundant API calls
+    final isLoaded = await tokenStorage.isFocusedSyllabusLoaded();
+    if (isLoaded) return;
+
+    // Fetch focused enrollment from API
+    final focused = await enrollmentService.getFocusedEnrollment();
+    if (focused != null) {
+      // Save syllabus ID to storage
+      await tokenStorage.setFocusedSyllabusId(focused.syllabusId);
+    }
+    // Mark as loaded so we don't call again
+    await tokenStorage.setFocusedSyllabusLoaded(true);
   }
 
   @override
@@ -106,6 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 16),
                     _buildBannerCarousel(),
                     const SizedBox(height: 16),
+                    _buildEnrolledSyllabusSection(),
                     _buildTrialCoursesSection(),
                   ],
                 ),
@@ -435,71 +460,201 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTrialCoursesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildEnrolledSyllabusSection() {
+    return FutureBuilder<List<Enrollment>>(
+      future: _enrollmentsFuture,
+      builder: (context, snapshot) {
+        final enrollments = snapshot.data ?? const <Enrollment>[];
+        if (enrollments.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Trial Syllabus >',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-            ),
-            TextButton(onPressed: () {}, child: const Text('See all')),
-          ],
-        ),
-        const SizedBox(height: 8),
-        FutureBuilder<List<Syllabus>>(
-          future: _trialSyllabiFuture,
-          builder: (context, snapshot) {
-            final items = (snapshot.data ?? const <Syllabus>[])
-                .take(5)
-                .toList();
-
-            if (snapshot.connectionState == ConnectionState.waiting &&
-                items.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Center(child: CircularProgressIndicator()),
-              );
-            }
-
-            if (items.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  'Chưa có syllabus thử.',
-                  style: TextStyle(color: _textMuted),
-                ),
-              );
-            }
-
-            return Column(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                for (int i = 0; i < items.length; i++) ...[
+                const Text(
+                  'Syllabus đã Enrollment >',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const EnrollmentsScreen(),
+                      ),
+                    );
+                  },
+                  child: const Text('Xem tất cả'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Column(
+              children: [
+                for (int i = 0; i < enrollments.length && i < 3; i++) ...[
                   GestureDetector(
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) =>
-                              SyllabusDetailScreen(syllabusId: items[i].id),
+                          builder: (_) => SyllabusDetailScreen(
+                            syllabusId: enrollments[i].syllabusId,
+                            isEnrolled: true,
+                          ),
                         ),
                       );
                     },
-                    child: _buildCourseCard(
-                      syllabusId: items[i].id,
-                      title: items[i].title,
-                      language: _displayLanguage(items[i].languageSet),
+                    child: _buildEnrolledCard(
+                      title: enrollments[i].syllabusTitle,
+                      isFocused: enrollments[i].isFocused,
                     ),
                   ),
-                  if (i != items.length - 1) const SizedBox(height: 12),
+                  if (i < enrollments.length - 1 && i < 2)
+                    const SizedBox(height: 12),
                 ],
               ],
-            );
-          },
+            ),
+            const SizedBox(height: 16),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildEnrolledCard({required String title, bool isFocused = false}) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF66BB6A), Color(0xFF43A047)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-      ],
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: _enrolledGreen.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.school, color: Color(0xFF43A047)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (isFocused)
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.3),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.star, color: Colors.white, size: 18),
+            ),
+          const SizedBox(width: 8),
+          const Icon(Icons.chevron_right, color: Colors.white),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrialCoursesSection() {
+    return FutureBuilder<List<Enrollment>>(
+      future: _enrollmentsFuture,
+      builder: (context, enrollSnapshot) {
+        final enrolledIds = (enrollSnapshot.data ?? <Enrollment>[])
+            .map((e) => e.syllabusId)
+            .toSet();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Trial Syllabus >',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+                TextButton(onPressed: () {}, child: const Text('See all')),
+              ],
+            ),
+            const SizedBox(height: 8),
+            FutureBuilder<List<Syllabus>>(
+              future: _trialSyllabiFuture,
+              builder: (context, snapshot) {
+                // Filter out enrolled syllabi
+                final items = (snapshot.data ?? const <Syllabus>[])
+                    .where((s) => !enrolledIds.contains(s.id))
+                    .take(5)
+                    .toList();
+
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    items.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                if (items.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'Không có syllabus thử mới.',
+                      style: TextStyle(color: _textMuted),
+                    ),
+                  );
+                }
+
+                return Column(
+                  children: [
+                    for (int i = 0; i < items.length; i++) ...[
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  SyllabusDetailScreen(syllabusId: items[i].id),
+                            ),
+                          );
+                        },
+                        child: _buildCourseCard(
+                          syllabusId: items[i].id,
+                          title: items[i].title,
+                          language: _displayLanguage(items[i].languageSet),
+                        ),
+                      ),
+                      if (i != items.length - 1) const SizedBox(height: 12),
+                    ],
+                  ],
+                );
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 

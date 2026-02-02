@@ -8,28 +8,48 @@ import '../enrollments/enrollments_screen.dart';
 class SyllabusDetailScreen extends StatefulWidget {
   final int syllabusId;
   final bool isEnrolled;
+  final bool showTestGlow;
 
   const SyllabusDetailScreen({
     Key? key,
     required this.syllabusId,
     this.isEnrolled = false,
+    this.showTestGlow = false,
   }) : super(key: key);
 
   @override
   State<SyllabusDetailScreen> createState() => _SyllabusDetailScreenState();
 }
 
-class _SyllabusDetailScreenState extends State<SyllabusDetailScreen> {
+class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
+    with SingleTickerProviderStateMixin {
   late final Future<SyllabusDetail?> _detailFuture;
   bool _isEnrolling = false;
+  late final AnimationController _glowController;
+  late final Animation<double> _glowAnimation;
 
   static const _primaryBlue = Color(0xFF4F6CFF);
-  static const _primaryBlueDark = Color(0xFF3F5BFF);
 
   @override
   void initState() {
     super.initState();
     _detailFuture = _load();
+    _glowController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _glowAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
+    );
+    if (widget.showTestGlow) {
+      _glowController.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _glowController.dispose();
+    super.dispose();
   }
 
   Future<SyllabusDetail?> _load() async {
@@ -265,81 +285,6 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen> {
                               ],
                             ),
                             const SizedBox(height: 16),
-                            // Learn and Test buttons
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: ElevatedButton.icon(
-                                    onPressed: () {
-                                      // TODO: Navigate to learning screen
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('Bắt đầu học...'),
-                                        ),
-                                      );
-                                    },
-                                    icon: const Icon(
-                                      Icons.school_outlined,
-                                      size: 20,
-                                    ),
-                                    label: const Text(
-                                      'Study',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.green,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 12,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: ElevatedButton.icon(
-                                    onPressed: () {
-                                      // TODO: Navigate to test screen
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('Bắt đầu kiểm tra...'),
-                                        ),
-                                      );
-                                    },
-                                    icon: const Icon(
-                                      Icons.quiz_outlined,
-                                      size: 20,
-                                    ),
-                                    label: const Text(
-                                      'Test',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.orange,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 12,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
                             // Divider
                             Container(height: 1, color: Colors.grey.shade200),
                             const SizedBox(height: 16),
@@ -424,35 +369,11 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen> {
                                   ],
                                 ),
                               ),
-                              // Menu and play buttons
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: _primaryBlueDark,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Icon(
-                                      Icons.more_horiz,
-                                      color: Colors.white,
-                                      size: 18,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: _primaryBlueDark,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Icon(
-                                      Icons.play_arrow,
-                                      color: Colors.white,
-                                      size: 18,
-                                    ),
-                                  ),
-                                ],
+                              // Arrow icon to indicate navigation
+                              const Icon(
+                                Icons.chevron_right,
+                                color: Colors.white,
+                                size: 24,
                               ),
                             ],
                           ),
@@ -467,7 +388,9 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen> {
           },
         ),
       ),
-      bottomNavigationBar: widget.isEnrolled ? null : _buildBottomNav(),
+      bottomNavigationBar: widget.isEnrolled
+          ? _buildTestButton()
+          : _buildBottomNav(),
     );
   }
 
@@ -530,6 +453,70 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen> {
                     ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTestButton() {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        child: AnimatedBuilder(
+          animation: _glowAnimation,
+          builder: (context, child) {
+            return GestureDetector(
+              onTap: () {
+                _glowController.stop();
+                // TODO: Navigate to test screen
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Chức năng kiểm tra đang phát triển!'),
+                  ),
+                );
+              },
+              child: Container(
+                height: 56,
+                decoration: BoxDecoration(
+                  color: Colors.orange,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: widget.showTestGlow
+                      ? [
+                          BoxShadow(
+                            color: Colors.orange.withOpacity(
+                              _glowAnimation.value * 0.6,
+                            ),
+                            blurRadius: 20 * _glowAnimation.value,
+                            spreadRadius: 4 * _glowAnimation.value,
+                          ),
+                        ]
+                      : [
+                          BoxShadow(
+                            color: Colors.orange.withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.quiz_outlined, color: Colors.white, size: 24),
+                    SizedBox(width: 10),
+                    Text(
+                      'Kiểm tra',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

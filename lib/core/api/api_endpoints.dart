@@ -43,4 +43,7 @@ class Api {
 
   // ==================== Enrollment Endpoints ====================
   static const String enrollments = '/enrollments';
+
+  // ==================== Learning Endpoints ====================
+  static const String learningSets = '/learning-sets';
 }

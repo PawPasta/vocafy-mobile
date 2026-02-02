@@ -10,6 +10,7 @@ class Enrollment {
   final String categoryName;
   final String status;
   final int progress;
+  final bool isFocused;
   final DateTime? enrolledAt;
 
   const Enrollment({
@@ -24,6 +25,7 @@ class Enrollment {
     required this.categoryName,
     required this.status,
     required this.progress,
+    this.isFocused = false,
     this.enrolledAt,
   });
 
@@ -35,6 +37,12 @@ class Enrollment {
     }
 
     String asString(Object? v) => (v ?? '').toString();
+
+    bool asBool(Object? v) {
+      if (v is bool) return v;
+      if (v is String) return v.toLowerCase() == 'true';
+      return false;
+    }
 
     DateTime? parseDate(Object? v) {
       if (v == null) return null;
@@ -94,6 +102,7 @@ class Enrollment {
       ),
       status: asString(json['status']),
       progress: asInt(json['progress']),
+      isFocused: asBool(json['is_focused'] ?? json['isFocused']),
       enrolledAt: parseDate(
         json['enrolled_at'] ??
             json['enrolledAt'] ??

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../data/services/topic_service.dart';
+import '../../data/services/learning_service.dart';
 import '../../data/models/topic.dart';
 import '../../config/routes/route_names.dart';
 import '../course/course_detail_screen.dart';
+import '../learning/flashcard_screen.dart';
 
 class TopicDetailScreen extends StatefulWidget {
   final int topicId;
@@ -41,7 +43,11 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.red,
+                    ),
                     const SizedBox(height: 16),
                     const Text('Không thể tải topic'),
                     const SizedBox(height: 16),
@@ -81,7 +87,10 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
                                 color: Colors.white.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(Icons.arrow_back, color: Colors.white),
+                              child: const Icon(
+                                Icons.arrow_back,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                           const Spacer(),
@@ -140,16 +149,17 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
                       ? const Center(child: Text('Chưa có khóa học nào'))
                       : GridView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                            childAspectRatio: 0.9,
-                          ),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                childAspectRatio: 0.9,
+                              ),
                           itemCount: topic.courses.length,
                           itemBuilder: (context, index) {
                             final course = topic.courses[index];
-                            return _buildCourseCard(course);
+                            return _buildCourseCard(course, topic.syllabusId);
                           },
                         ),
                 ),
@@ -162,12 +172,15 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
     );
   }
 
-  Widget _buildCourseCard(TopicCourse course) {
+  Widget _buildCourseCard(TopicCourse course, int? syllabusId) {
     return GestureDetector(
       onTap: () {
-        Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => CourseDetailScreen(courseId: course.id),
-        ));
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) =>
+                CourseDetailScreen(courseId: course.id, syllabusId: syllabusId),
+          ),
+        );
       },
       child: Container(
         decoration: BoxDecoration(
@@ -194,7 +207,11 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
                   borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                 ),
                 child: const Center(
-                  child: Icon(Icons.book_outlined, size: 40, color: _primaryBlue),
+                  child: Icon(
+                    Icons.book_outlined,
+                    size: 40,
+                    color: _primaryBlue,
+                  ),
                 ),
               ),
             ),
@@ -222,18 +239,39 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
                       children: [
                         const Text(
                           'Beginner',
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 11,
-                          ),
+                          style: TextStyle(color: Colors.grey, fontSize: 11),
                         ),
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: _primaryBlue,
-                            borderRadius: BorderRadius.circular(8),
+                        GestureDetector(
+                          onTap: () => _startLearning(course, syllabusId),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.green,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.school_outlined,
+                                  color: Colors.white,
+                                  size: 14,
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Học',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          child: const Icon(Icons.play_arrow, color: Colors.white, size: 16),
                         ),
                       ],
                     ),
@@ -245,6 +283,35 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _startLearning(TopicCourse course, int? syllabusId) async {
+    final learningSet = await learningService.startLearning(
+      courseId: course.id,
+      syllabusId: syllabusId ?? 0,
+    );
+
+    if (mounted) {
+      if (learningSet != null && learningSet.cards.isNotEmpty) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => FlashcardScreen(
+              learningSet: learningSet,
+              courseTitle: course.title,
+              syllabusId: syllabusId,
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không có từ vựng để học hoặc lỗi kết nối.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildBottomNav() {
@@ -261,15 +328,42 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildBottomItem(icon: Icons.home, label: 'Home', isActive: false, onTap: () {
-                Navigator.of(context).pushNamedAndRemoveUntil(RouteNames.home, (route) => false);
-              }),
-              _buildBottomItem(icon: Icons.smart_toy_outlined, label: 'AI', isActive: false, onTap: () {}),
-              _buildBottomItem(icon: Icons.book_outlined, label: 'Vocab', isActive: false, onTap: () {}),
-              _buildBottomItem(icon: Icons.school_outlined, label: 'Course', isActive: true, onTap: () {}),
-              _buildBottomItem(icon: Icons.person_outline, label: 'Profile', isActive: false, onTap: () {
-                Navigator.of(context).pushNamed(RouteNames.profile);
-              }),
+              _buildBottomItem(
+                icon: Icons.home,
+                label: 'Home',
+                isActive: false,
+                onTap: () {
+                  Navigator.of(
+                    context,
+                  ).pushNamedAndRemoveUntil(RouteNames.home, (route) => false);
+                },
+              ),
+              _buildBottomItem(
+                icon: Icons.smart_toy_outlined,
+                label: 'AI',
+                isActive: false,
+                onTap: () {},
+              ),
+              _buildBottomItem(
+                icon: Icons.book_outlined,
+                label: 'Vocab',
+                isActive: false,
+                onTap: () {},
+              ),
+              _buildBottomItem(
+                icon: Icons.school_outlined,
+                label: 'Course',
+                isActive: true,
+                onTap: () {},
+              ),
+              _buildBottomItem(
+                icon: Icons.person_outline,
+                label: 'Profile',
+                isActive: false,
+                onTap: () {
+                  Navigator.of(context).pushNamed(RouteNames.profile);
+                },
+              ),
             ],
           ),
         ),
