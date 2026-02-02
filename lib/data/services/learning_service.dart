@@ -12,14 +12,14 @@ class LearningService {
 
   LearningService._();
 
-  /// Start learning a course and get learning cards
-  /// 1. Check if the course's syllabus is the focused one
+  /// Start learning and get learning cards
+  /// 1. Check if the syllabus is the focused one
   /// 2. If not, update the focused enrollment
-  /// 3. Call POST /api/learning-sets with { "course_id": courseId }
+  /// 3. Call POST /api/learning-sets with { "course_id": 0 } (BE doesn't use courseId anymore)
   ///
   /// Returns LearningSet with cards if successful, null otherwise
   Future<LearningSet?> startLearning({
-    required int courseId,
+    int courseId = 0, // Default to 0, BE doesn't use this anymore
     required int syllabusId,
   }) async {
     try {

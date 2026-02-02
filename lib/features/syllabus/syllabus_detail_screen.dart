@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../data/services/syllabus_service.dart';
 import '../../data/services/enrollment_service.dart';
+import '../../data/services/learning_service.dart';
 import '../../data/models/syllabus_detail.dart';
 import '../topic/topic_detail_screen.dart';
 import '../enrollments/enrollments_screen.dart';
+import '../learning/flashcard_screen.dart';
 
 class SyllabusDetailScreen extends StatefulWidget {
   final int syllabusId;
@@ -25,6 +27,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
     with SingleTickerProviderStateMixin {
   late final Future<SyllabusDetail?> _detailFuture;
   bool _isEnrolling = false;
+  bool _isStartingLearning = false;
   late final AnimationController _glowController;
   late final Animation<double> _glowAnimation;
 
@@ -389,9 +392,42 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
         ),
       ),
       bottomNavigationBar: widget.isEnrolled
-          ? _buildTestButton()
+          ? _buildEnrolledButtons()
           : _buildBottomNav(),
     );
+  }
+
+  Future<void> _startLearning() async {
+    if (_isStartingLearning) return;
+    setState(() => _isStartingLearning = true);
+
+    final learningSet = await learningService.startLearning(
+      syllabusId: widget.syllabusId,
+    );
+
+    if (mounted) {
+      setState(() => _isStartingLearning = false);
+
+      if (learningSet != null && learningSet.cards.isNotEmpty) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => FlashcardScreen(
+              learningSet: learningSet,
+              courseTitle: 'Học từ vựng',
+              syllabusId: widget.syllabusId,
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không có từ vựng để học hoặc lỗi kết nối.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   int _countCourses(SyllabusDetail s) {
@@ -400,6 +436,131 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
       count += t.courses.length;
     }
     return count;
+  }
+
+  Widget _buildEnrolledButtons() {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        child: Row(
+          children: [
+            // Study button
+            Expanded(
+              child: GestureDetector(
+                onTap: _isStartingLearning ? null : _startLearning,
+                child: Container(
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.green.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: _isStartingLearning
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                        : const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.school_outlined,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Học',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Test button
+            Expanded(
+              child: AnimatedBuilder(
+                animation: _glowAnimation,
+                builder: (context, child) {
+                  return GestureDetector(
+                    onTap: () {
+                      _glowController.stop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Chức năng kiểm tra đang phát triển!'),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: Colors.orange,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: widget.showTestGlow
+                            ? [
+                                BoxShadow(
+                                  color: Colors.orange.withOpacity(
+                                    _glowAnimation.value * 0.6,
+                                  ),
+                                  blurRadius: 20 * _glowAnimation.value,
+                                  spreadRadius: 4 * _glowAnimation.value,
+                                ),
+                              ]
+                            : [
+                                BoxShadow(
+                                  color: Colors.orange.withOpacity(0.3),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.quiz_outlined,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Kiểm tra',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildBottomNav() {
@@ -453,70 +614,6 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
                     ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTestButton() {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        child: AnimatedBuilder(
-          animation: _glowAnimation,
-          builder: (context, child) {
-            return GestureDetector(
-              onTap: () {
-                _glowController.stop();
-                // TODO: Navigate to test screen
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Chức năng kiểm tra đang phát triển!'),
-                  ),
-                );
-              },
-              child: Container(
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Colors.orange,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: widget.showTestGlow
-                      ? [
-                          BoxShadow(
-                            color: Colors.orange.withOpacity(
-                              _glowAnimation.value * 0.6,
-                            ),
-                            blurRadius: 20 * _glowAnimation.value,
-                            spreadRadius: 4 * _glowAnimation.value,
-                          ),
-                        ]
-                      : [
-                          BoxShadow(
-                            color: Colors.orange.withOpacity(0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.quiz_outlined, color: Colors.white, size: 24),
-                    SizedBox(width: 10),
-                    Text(
-                      'Kiểm tra',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
         ),
       ),
     );
