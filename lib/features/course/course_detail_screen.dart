@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import '../../data/services/course_service.dart';
 import '../../data/services/vocabulary_service.dart';
+import '../../data/services/learning_service.dart';
 import '../../data/models/course.dart';
 import '../../data/models/vocabulary.dart';
 import '../../config/routes/route_names.dart';
 import '../vocabulary/vocabulary_detail_screen.dart';
+import '../learning/flashcard_screen.dart';
 
 class CourseDetailScreen extends StatefulWidget {
   final int courseId;
+  final int? syllabusId;
 
-  const CourseDetailScreen({Key? key, required this.courseId}) : super(key: key);
+  const CourseDetailScreen({Key? key, required this.courseId, this.syllabusId})
+    : super(key: key);
 
   @override
   State<CourseDetailScreen> createState() => _CourseDetailScreenState();
@@ -17,6 +21,7 @@ class CourseDetailScreen extends StatefulWidget {
 
 class _CourseDetailScreenState extends State<CourseDetailScreen> {
   late final Future<_CourseData> _dataFuture;
+  bool _isStartingLearning = false;
 
   static const _primaryBlue = Color(0xFF4F6CFF);
 
@@ -27,9 +32,53 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   }
 
   Future<_CourseData> _loadData() async {
-    final course = await courseService.getCourseById(widget.courseId);
-    final vocabularies = await vocabularyService.listVocabulariesByCourse(widget.courseId);
-    return _CourseData(course: course, vocabularies: vocabularies);
+    // Load course and vocabularies in parallel for better performance
+    final results = await Future.wait([
+      courseService.getCourseById(widget.courseId),
+      vocabularyService.listVocabulariesByCourse(widget.courseId),
+    ]);
+    return _CourseData(
+      course: results[0] as Course?,
+      vocabularies: results[1] as List<Vocabulary>,
+    );
+  }
+
+  Future<void> _startLearning(Course course) async {
+    if (_isStartingLearning) return;
+
+    setState(() => _isStartingLearning = true);
+
+    // Get syllabusId from widget or course's topic relationship
+    final syllabusId = widget.syllabusId ?? 0;
+
+    final learningSet = await learningService.startLearning(
+      courseId: course.id,
+      syllabusId: syllabusId,
+    );
+
+    if (mounted) {
+      setState(() => _isStartingLearning = false);
+
+      if (learningSet != null && learningSet.cards.isNotEmpty) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => FlashcardScreen(
+              learningSet: learningSet,
+              courseTitle: course.title,
+              syllabusId: widget.syllabusId,
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không có từ vựng để học hoặc lỗi kết nối.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -48,7 +97,11 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.red,
+                    ),
                     const SizedBox(height: 16),
                     const Text('Không thể tải khóa học'),
                     const SizedBox(height: 16),
@@ -89,7 +142,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                                 color: Colors.white.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(Icons.arrow_back, color: Colors.white),
+                              child: const Icon(
+                                Icons.arrow_back,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -103,6 +159,39 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          GestureDetector(
+                            onTap: () => _startLearning(course),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.school_outlined,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Học',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
@@ -127,7 +216,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
-                      const Icon(Icons.library_books_outlined, color: _primaryBlue),
+                      const Icon(
+                        Icons.library_books_outlined,
+                        color: _primaryBlue,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         '${vocabularies.length} từ vựng',
@@ -164,9 +256,11 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   Widget _buildVocabCard(Vocabulary vocab) {
     return GestureDetector(
       onTap: () {
-        Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => VocabularyDetailScreen(vocabularyId: vocab.id),
-        ));
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => VocabularyDetailScreen(vocabularyId: vocab.id),
+          ),
+        );
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -192,10 +286,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       child: Image.network(
                         vocab.imageUrl!,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.text_fields,
-                          color: _primaryBlue,
-                        ),
+                        errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.text_fields, color: _primaryBlue),
                       ),
                     )
                   : const Icon(Icons.text_fields, color: _primaryBlue),
@@ -213,7 +305,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       fontSize: 16,
                     ),
                   ),
-                  if (vocab.reading.isNotEmpty && vocab.reading != vocab.mainTerm) ...[
+                  if (vocab.reading.isNotEmpty &&
+                      vocab.reading != vocab.mainTerm) ...[
                     const SizedBox(height: 2),
                     Text(
                       vocab.reading,
@@ -226,10 +319,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                   const SizedBox(height: 4),
                   Text(
                     vocab.mainMeaning,
-                    style: const TextStyle(
-                      color: _primaryBlue,
-                      fontSize: 13,
-                    ),
+                    style: const TextStyle(color: _primaryBlue, fontSize: 13),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -257,15 +347,42 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildBottomItem(icon: Icons.home, label: 'Home', isActive: false, onTap: () {
-                Navigator.of(context).pushNamedAndRemoveUntil(RouteNames.home, (route) => false);
-              }),
-              _buildBottomItem(icon: Icons.smart_toy_outlined, label: 'AI', isActive: false, onTap: () {}),
-              _buildBottomItem(icon: Icons.book_outlined, label: 'Vocab', isActive: true, onTap: () {}),
-              _buildBottomItem(icon: Icons.school_outlined, label: 'Course', isActive: false, onTap: () {}),
-              _buildBottomItem(icon: Icons.person_outline, label: 'Profile', isActive: false, onTap: () {
-                Navigator.of(context).pushNamed(RouteNames.profile);
-              }),
+              _buildBottomItem(
+                icon: Icons.home,
+                label: 'Home',
+                isActive: false,
+                onTap: () {
+                  Navigator.of(
+                    context,
+                  ).pushNamedAndRemoveUntil(RouteNames.home, (route) => false);
+                },
+              ),
+              _buildBottomItem(
+                icon: Icons.smart_toy_outlined,
+                label: 'AI',
+                isActive: false,
+                onTap: () {},
+              ),
+              _buildBottomItem(
+                icon: Icons.book_outlined,
+                label: 'Vocab',
+                isActive: true,
+                onTap: () {},
+              ),
+              _buildBottomItem(
+                icon: Icons.school_outlined,
+                label: 'Course',
+                isActive: false,
+                onTap: () {},
+              ),
+              _buildBottomItem(
+                icon: Icons.person_outline,
+                label: 'Profile',
+                isActive: false,
+                onTap: () {
+                  Navigator.of(context).pushNamed(RouteNames.profile);
+                },
+              ),
             ],
           ),
         ),

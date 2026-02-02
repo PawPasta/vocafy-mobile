@@ -13,10 +13,7 @@ class EnrollmentsScreen extends StatefulWidget {
 
 class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
   List<Enrollment> _enrollments = [];
-  Enrollment? _focusedEnrollment;
   bool _loadingEnrollments = false;
-  bool _loadingFocused = false;
-  bool _initialLoading = true;
 
   final PageController _enrolledController = PageController(
     viewportFraction: 0.85,
@@ -38,14 +35,7 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
   }
 
   Future<void> _loadData() async {
-    setState(() => _initialLoading = true);
-    await Future.wait([
-      _loadEnrollments(force: true),
-      _loadFocusedEnrollment(force: true),
-    ]);
-    if (mounted) {
-      setState(() => _initialLoading = false);
-    }
+    await _loadEnrollments(force: true);
   }
 
   Future<void> _loadEnrollments({bool force = false}) async {
@@ -60,45 +50,6 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
         _enrollments = enrollments;
         _loadingEnrollments = false;
       });
-    }
-  }
-
-  Future<void> _loadFocusedEnrollment({bool force = false}) async {
-    if (_loadingFocused && !force) return;
-    setState(() => _loadingFocused = true);
-    final focused = await enrollmentService.getFocusedEnrollment();
-    if (mounted) {
-      setState(() {
-        _focusedEnrollment = focused;
-        _loadingFocused = false;
-      });
-    }
-  }
-
-  Future<void> _toggleFocus(Enrollment enrollment) async {
-    final isFocused = _focusedEnrollment?.syllabusId == enrollment.syllabusId;
-
-    if (isFocused) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This is already the focused course')),
-      );
-      return;
-    }
-
-    final success = await enrollmentService.setFocusedEnrollment(
-      enrollment.syllabusId,
-    );
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Set "${enrollment.syllabusTitle}" as focused course!'),
-        ),
-      );
-      _loadFocusedEnrollment(force: true);
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not set focused course')),
-      );
     }
   }
 
@@ -119,8 +70,6 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 20),
-                      _buildFocusedSection(),
-                      const SizedBox(height: 28),
                       _buildEnrolledSection(),
                       const SizedBox(height: 24),
                     ],
@@ -174,270 +123,6 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(Icons.school_outlined, color: Colors.white),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFocusedSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.amber.shade100,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.star, color: Colors.amber, size: 20),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Currently Focused',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        if (_loadingFocused)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(40),
-              child: CircularProgressIndicator(),
-            ),
-          )
-        else if (_focusedEnrollment == null)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.amber.shade50, Colors.orange.shade50],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.amber.shade200),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.lightbulb_outline,
-                    color: Colors.amber.shade700,
-                    size: 32,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'No focused course yet',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                            color: Colors.amber.shade800,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Tap ⭐ on a course below to set it as focused',
-                          style: TextStyle(
-                            color: Colors.amber.shade700,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          )
-        else
-          SizedBox(height: 132, child: _buildFocusedCard(_focusedEnrollment!)),
-      ],
-    );
-  }
-
-  Widget _buildFocusedCard(Enrollment enrollment) {
-    final hasImage =
-        enrollment.imageBackground.isNotEmpty ||
-        enrollment.imageIcon.isNotEmpty;
-    final imageUrl = enrollment.imageBackground.isNotEmpty
-        ? enrollment.imageBackground
-        : enrollment.imageIcon;
-
-    return GestureDetector(
-      onTap: () => _navigateToDetail(enrollment),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            colors: [Colors.amber.shade400, Colors.orange.shade400],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.amber.withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            if (hasImage)
-              Positioned.fill(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
-                    imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox(),
-                  ),
-                ),
-              ),
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      Colors.black.withOpacity(0.7),
-                      Colors.black.withOpacity(0.3),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  // Left side: Title and chips
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.amber,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.star, color: Colors.white, size: 12),
-                              SizedBox(width: 3),
-                              Text(
-                                'Focused',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          enrollment.syllabusTitle,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            _buildFocusedChip(
-                              Icons.access_time,
-                              '${enrollment.totalDays} days',
-                            ),
-                            if (enrollment.progress > 0) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  '${enrollment.progress}%',
-                                  style: TextStyle(
-                                    color: Colors.amber.shade700,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Right side: Play button
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.play_arrow,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFocusedChip(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: Colors.white),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 12, color: Colors.white),
           ),
         ],
       ),
@@ -571,7 +256,7 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
   }
 
   Widget _buildEnrollmentCarouselCard(Enrollment enrollment) {
-    final isFocused = _focusedEnrollment?.syllabusId == enrollment.syllabusId;
+    final isFocused = enrollment.isFocused;
     final hasImage =
         enrollment.imageBackground.isNotEmpty ||
         enrollment.imageIcon.isNotEmpty;
@@ -622,26 +307,23 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
                   Positioned(
                     top: 10,
                     right: 10,
-                    child: GestureDetector(
-                      onTap: () => _toggleFocus(enrollment),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: isFocused ? Colors.amber : Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.15),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          isFocused ? Icons.star : Icons.star_border,
-                          color: isFocused ? Colors.white : Colors.amber,
-                          size: 20,
-                        ),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: isFocused ? Colors.amber : Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        isFocused ? Icons.star : Icons.star_border,
+                        color: isFocused ? Colors.white : Colors.amber,
+                        size: 20,
                       ),
                     ),
                   ),
