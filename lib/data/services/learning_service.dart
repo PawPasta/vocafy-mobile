@@ -10,12 +10,19 @@ class LearningService {
   static final LearningService _instance = LearningService._();
   static LearningService get instance => _instance;
 
+  // Prevent multiple concurrent PATCH calls when several learning flows start.
+  static Future<void>? _focusUpdateInFlight;
+  static int? _focusUpdateTargetSyllabusId;
+
   LearningService._();
 
   /// Start learning and get learning cards
-  /// 1. Check if the syllabus is the focused one
-  /// 2. If not, update the focused enrollment
-  /// 3. Call POST /api/learning-sets with { "course_id": 0 } (BE doesn't use courseId anymore)
+  /// Logic:
+  /// 1. Kiểm tra storage có focused syllabus ID không
+  /// 2. Nếu KHÔNG có (null) → gọi PATCH để set focused enrollment + cập nhật storage
+  /// 3. Nếu CÓ nhưng KHÁC syllabus đang học → gọi PATCH để đổi focused + cập nhật storage
+  /// 4. Nếu CÓ và TRÙNG syllabus đang học → KHÔNG cần gọi PATCH
+  /// 5. Gọi POST /api/learning-sets để lấy cards
   ///
   /// Returns LearningSet with cards if successful, null otherwise
   Future<LearningSet?> startLearning({
@@ -23,22 +30,7 @@ class LearningService {
     required int syllabusId,
   }) async {
     try {
-      // Check current focused syllabus ID from storage
-      final focusedSyllabusId = await tokenStorage.getFocusedSyllabusId();
-
-      // If the course's syllabus is not the focused one, update it
-      if (focusedSyllabusId != syllabusId) {
-        final success = await enrollmentService.setFocusedEnrollment(
-          syllabusId,
-        );
-        if (success) {
-          // Update local storage
-          await tokenStorage.setFocusedSyllabusId(syllabusId);
-        }
-        if (kDebugMode) {
-          print('📚 Updated focused syllabus to $syllabusId: $success');
-        }
-      }
+      await _ensureFocusedSyllabus(syllabusId);
 
       // Call learning-sets API
       final response = await api.post(Api.learningSets, {
@@ -66,6 +58,80 @@ class LearningService {
         print('❌ startLearning error: $e');
       }
       return null;
+    }
+  }
+
+  Future<void> _ensureFocusedSyllabus(int syllabusId) async {
+    // Some call sites pass 0 when they don't know the syllabus.
+    // Avoid spamming PATCH with invalid ids; server should use current focus.
+    if (syllabusId <= 0) {
+      if (kDebugMode) {
+        print(
+          '⚠️ startLearning called with syllabusId=$syllabusId; skip focus PATCH',
+        );
+      }
+      return;
+    }
+
+    // If we haven't loaded focused enrollment yet (e.g., fast navigation after login),
+    // try to fetch it once to prevent unnecessary PATCH.
+    final isLoaded = await tokenStorage.isFocusedSyllabusLoaded();
+    if (!isLoaded) {
+      try {
+        final focused = await enrollmentService.getFocusedEnrollment();
+        await tokenStorage.setFocusedSyllabusId(focused?.syllabusId);
+        await tokenStorage.setFocusedSyllabusLoaded(true);
+      } catch (_) {
+        // keep loaded=false so home/login can retry later
+      }
+    }
+
+    while (true) {
+      final focusedSyllabusId = await tokenStorage.getFocusedSyllabusId();
+      if (focusedSyllabusId == syllabusId) {
+        if (kDebugMode) {
+          print('📚 Focused syllabus matches ($syllabusId) → no PATCH');
+        }
+        return;
+      }
+
+      final inFlight = _focusUpdateInFlight;
+      if (inFlight != null) {
+        // If the in-flight update is already targeting our syllabus, just await it.
+        if (_focusUpdateTargetSyllabusId == syllabusId) {
+          await inFlight;
+          return;
+        }
+
+        // Otherwise, wait for current update to finish, then re-check.
+        await inFlight;
+        continue;
+      }
+
+      _focusUpdateTargetSyllabusId = syllabusId;
+      _focusUpdateInFlight =
+          () async {
+            if (kDebugMode) {
+              print('📚 PATCH focused enrollment → syllabusId=$syllabusId');
+            }
+
+            final success = await enrollmentService.setFocusedEnrollment(
+              syllabusId,
+            );
+            if (success) {
+              await tokenStorage.setFocusedSyllabusId(syllabusId);
+            }
+
+            if (kDebugMode) {
+              print('📚 PATCH focused enrollment result: $success');
+            }
+          }().whenComplete(() {
+            _focusUpdateInFlight = null;
+            _focusUpdateTargetSyllabusId = null;
+          });
+
+      await _focusUpdateInFlight;
+      return;
     }
   }
 

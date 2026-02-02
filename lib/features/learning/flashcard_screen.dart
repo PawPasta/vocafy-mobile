@@ -3,7 +3,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flip_card/flip_card.dart';
 import '../../data/models/learning_card.dart';
 import '../../data/services/learning_service.dart';
-import '../syllabus/syllabus_detail_screen.dart';
+import '../../config/routes/route_names.dart';
 
 class FlashcardScreen extends StatefulWidget {
   final LearningSet learningSet;
@@ -47,9 +47,23 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
     super.dispose();
   }
 
+  /// Phát âm tiếng Nhật
+  Future<void> _speakJapanese(String text) async {
+    await _tts.setLanguage('ja-JP');
+    await _tts.speak(text);
+  }
+
+  /// Phát âm tiếng Anh
+  Future<void> _speakEnglish(String text) async {
+    await _tts.setLanguage('en-US');
+    await _tts.speak(text);
+  }
+
   void _onFlip(bool isFront) {
-    setState(() => _isFlipped = !isFront);
+    // Set _isFlipped = true khi flip sang mặt sau (nghĩa tiếng Anh)
+    // Giữ nguyên _isFlipped = true khi flip lại để không cần flip 2 lần
     if (!isFront) {
+      setState(() => _isFlipped = true);
       final id = _cards[_currentIndex].vocabId;
       if (!_learnedVocabIds.contains(id)) _learnedVocabIds.add(id);
     }
@@ -119,23 +133,13 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
-              if (widget.syllabusId != null) {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => SyllabusDetailScreen(
-                      syllabusId: widget.syllabusId!,
-                      isEnrolled: true,
-                      showTestGlow: true,
-                    ),
-                  ),
-                );
-              } else {
-                Navigator.pop(context);
-              }
+              Navigator.pop(context); // Close dialog
+              // Luôn navigate về homepage
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil(RouteNames.home, (route) => false);
             },
-            child: const Text('Tiếp tục'),
+            child: const Text('Về trang chủ'),
           ),
         ],
       ),
@@ -274,7 +278,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
         ],
         const SizedBox(height: 20),
         GestureDetector(
-          onTap: () => _tts.speak(v.mainTerm),
+          onTap: () => _speakJapanese(v.mainTerm),
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -318,6 +322,23 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
           v.mainMeaning,
           style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        // Text-to-speech cho nghĩa tiếng Anh
+        GestureDetector(
+          onTap: () => _speakEnglish(v.mainMeaning),
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.volume_up,
+              color: Colors.green.shade700,
+              size: 24,
+            ),
+          ),
         ),
         if (v.meanings.isNotEmpty &&
             v.meanings.first.partOfSpeech.isNotEmpty) ...[
