@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/api/api_client.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../core/storage/token_storage.dart';
+import '../../data/services/auth_service.dart';
 import '../../data/models/category.dart';
 import '../../data/models/syllabus.dart';
 import '../../data/models/enrollment.dart';
@@ -280,17 +281,41 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(width: 12),
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: _primaryBlueDark,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: const Icon(
-            Icons.fullscreen_outlined,
-            color: Colors.white,
-            size: 24,
+        GestureDetector(
+          onTap: () async {
+            final ok = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('Đăng xuất'),
+                content: const Text('Bạn có chắc muốn đăng xuất không?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(false),
+                    child: const Text('Hủy'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(true),
+                    child: const Text('Đăng xuất'),
+                  ),
+                ],
+              ),
+            );
+            if (ok != true) return;
+
+            await authService.logout();
+            if (!context.mounted) return;
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil(RouteNames.login, (route) => false);
+          },
+          child: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: _primaryBlueDark,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(Icons.logout, color: Colors.white, size: 22),
           ),
         ),
       ],

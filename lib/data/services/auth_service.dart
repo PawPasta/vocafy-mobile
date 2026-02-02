@@ -151,6 +151,21 @@ class AuthService {
     await tokenStorage.clearFocusedSyllabus();
   }
 
+  /// Logout server + clear local tokens.
+  /// API: POST /api/auth/logout (requires access token in Authorization header)
+  Future<void> logout() async {
+    try {
+      await api.post(Api.logout);
+    } catch (e) {
+      // Best-effort: even if server logout fails, still clear local session.
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('❌ logout API error: $e');
+      }
+    }
+    await signOut();
+  }
+
   /// Kiểm tra đã đăng nhập Google chưa
   Future<bool> isSignedIn() => _googleSignIn.isSignedIn();
 

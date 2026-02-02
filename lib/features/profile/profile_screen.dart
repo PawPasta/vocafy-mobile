@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/api/user_service.dart';
 import '../../core/models/user_model.dart';
+import '../../config/routes/route_names.dart';
+import '../../data/services/auth_service.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);
 
-  Widget _label(String text) => Text(text, style: const TextStyle(fontWeight: FontWeight.w600));
+  Widget _label(String text) =>
+      Text(text, style: const TextStyle(fontWeight: FontWeight.w600));
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +33,10 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 // Top bar
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   child: Row(
                     children: [
                       IconButton(
@@ -39,15 +45,55 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       const Expanded(
                         child: Center(
-                          child: Text('Profile', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                          child: Text(
+                            'Profile',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 48),
+                      IconButton(
+                        icon: const Icon(Icons.logout, color: Colors.white),
+                        onPressed: () async {
+                          final ok = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Đăng xuất'),
+                              content: const Text(
+                                'Bạn có chắc muốn đăng xuất không?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(ctx).pop(false),
+                                  child: const Text('Hủy'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.of(ctx).pop(true),
+                                  child: const Text('Đăng xuất'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (ok != true) return;
+
+                          await authService.logout();
+                          if (!context.mounted) return;
+                          Navigator.of(context).pushNamedAndRemoveUntil(
+                            RouteNames.login,
+                            (route) => false,
+                          );
+                        },
+                      ),
                     ],
                   ),
                   decoration: const BoxDecoration(
                     color: Color(0xFF5A4BFF),
-                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
+                    borderRadius: BorderRadius.vertical(
+                      bottom: Radius.circular(18),
+                    ),
                   ),
                 ),
 
@@ -59,12 +105,21 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     // Card
                     Container(
-                      margin: const EdgeInsets.only(top: 56, left: 16, right: 16),
+                      margin: const EdgeInsets.only(
+                        top: 56,
+                        left: 16,
+                        right: 16,
+                      ),
                       padding: const EdgeInsets.fromLTRB(16, 64, 16, 16),
                       decoration: BoxDecoration(
                         color: const Color(0xFFEFF6FF), // light pastel blue
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 8,
+                          ),
+                        ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,18 +128,33 @@ class ProfileScreen extends StatelessWidget {
                           Align(
                             alignment: Alignment.centerRight,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFF5A4BFF),
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: const Color(0xFF4639E6)),
+                                border: Border.all(
+                                  color: const Color(0xFF4639E6),
+                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: const [
-                                  Icon(Icons.star, color: Colors.white, size: 18),
+                                  Icon(
+                                    Icons.star,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
                                   SizedBox(width: 8),
-                                  Text('Upgrade', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                                  Text(
+                                    'Upgrade',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -96,7 +166,10 @@ class ProfileScreen extends StatelessWidget {
                             children: [
                               Row(
                                 children: [
-                                  SizedBox(width: 100, child: _label('Full name')),
+                                  SizedBox(
+                                    width: 100,
+                                    child: _label('Full name'),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 6),
@@ -119,8 +192,13 @@ class ProfileScreen extends StatelessWidget {
                                               height: 36,
                                               decoration: BoxDecoration(
                                                 color: const Color(0xFFF6F7F9),
-                                                borderRadius: BorderRadius.circular(10),
-                                                border: Border.all(color: const Color(0xFFE6E9EE)),
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                                border: Border.all(
+                                                  color: const Color(
+                                                    0xFFE6E9EE,
+                                                  ),
+                                                ),
                                               ),
                                             ),
                                           ),
@@ -130,7 +208,10 @@ class ProfileScreen extends StatelessWidget {
                                             top: 8,
                                             child: Text(
                                               user?.profile?.displayName ?? '',
-                                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 16,
+                                              ),
                                             ),
                                           ),
                                         ],
@@ -155,10 +236,7 @@ class ProfileScreen extends StatelessWidget {
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              SizedBox(
-                                width: 100,
-                                child: _label('Mail'),
-                              ),
+                              SizedBox(width: 100, child: _label('Mail')),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: SizedBox(
@@ -173,8 +251,12 @@ class ProfileScreen extends StatelessWidget {
                                           height: 36,
                                           decoration: BoxDecoration(
                                             color: const Color(0xFFF6F7F9),
-                                            borderRadius: BorderRadius.circular(10),
-                                            border: Border.all(color: const Color(0xFFE6E9EE)),
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                            border: Border.all(
+                                              color: const Color(0xFFE6E9EE),
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -184,12 +266,17 @@ class ProfileScreen extends StatelessWidget {
                                         top: 0,
                                         bottom: 0,
                                         child: Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 0.0),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 0.0,
+                                          ),
                                           child: Align(
                                             alignment: Alignment.centerLeft,
                                             child: Text(
                                               user?.email ?? '',
-                                              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w500,
+                                                fontSize: 14,
+                                              ),
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                             ),
@@ -217,10 +304,14 @@ class ProfileScreen extends StatelessWidget {
                             backgroundColor: Colors.white,
                             child: CircleAvatar(
                               radius: 52,
-                              backgroundImage: user?.profile?.avatarUrl != null && user!.profile!.avatarUrl!.isNotEmpty
+                              backgroundImage:
+                                  user?.profile?.avatarUrl != null &&
+                                      user!.profile!.avatarUrl!.isNotEmpty
                                   ? NetworkImage(user.profile!.avatarUrl!)
                                   : null,
-                              child: user?.profile?.avatarUrl == null || user!.profile!.avatarUrl!.isEmpty
+                              child:
+                                  user?.profile?.avatarUrl == null ||
+                                      user!.profile!.avatarUrl!.isEmpty
                                   ? ClipOval(
                                       child: SvgPicture.asset(
                                         'lib/assets/icons/avatar_placeholder.svg',
@@ -247,35 +338,50 @@ class ProfileScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                          Row(
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Streak', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                          Row(children: [
-                            // Gradient flame icon: light -> strong from top to bottom
-                            ShaderMask(
-                              shaderCallback: (bounds) => const LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [Color(0xFFFFE0CC), Color(0xFFFF4500)],
-                              ).createShader(bounds),
-                              child: const Icon(
-                                Icons.local_fire_department,
-                                size: 44,
-                                color: Colors.white,
+                          const Text(
+                            'Streak',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              // Gradient flame icon: light -> strong from top to bottom
+                              ShaderMask(
+                                shaderCallback: (bounds) =>
+                                    const LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Color(0xFFFFE0CC),
+                                        Color(0xFFFF4500),
+                                      ],
+                                    ).createShader(bounds),
+                                child: const Icon(
+                                  Icons.local_fire_department,
+                                  size: 44,
+                                  color: Colors.white,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              '${user?.streakCount ?? 0}',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-                            ),
-                          ])
+                              const SizedBox(width: 6),
+                              Text(
+                                '${user?.streakCount ?? 0}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
                       // White (now pastel blue) box under Streak containing 7 equal circles
-                          Container(
+                      Container(
                         height: 72,
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -289,7 +395,15 @@ class ProfileScreen extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: List.generate(7, (index) {
-                              const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+                              const days = [
+                                'MON',
+                                'TUE',
+                                'WED',
+                                'THU',
+                                'FRI',
+                                'SAT',
+                                'SUN',
+                              ];
                               return Column(
                                 mainAxisSize: MainAxisSize.min,
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -309,7 +423,9 @@ class ProfileScreen extends StatelessWidget {
                                     decoration: BoxDecoration(
                                       color: Colors.white,
                                       shape: BoxShape.circle,
-                                      border: Border.all(color: const Color(0xFFE6E9EE)),
+                                      border: Border.all(
+                                        color: const Color(0xFFE6E9EE),
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -319,7 +435,13 @@ class ProfileScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      const Text('Daily Goal', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      const Text(
+                        'Daily Goal',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
                       Slider(value: 30, min: 0, max: 60, onChanged: (_) {}),
                     ],
                   ),
