@@ -40,4 +40,7 @@ class Api {
   // ==================== Vocabularies by Course ====================
   /// Dùng: '${Api.vocabulariesByCourse}/$courseId'
   static const String vocabulariesByCourse = '/vocabularies/by-course';
+
+  // ==================== Enrollment Endpoints ====================
+  static const String enrollments = '/enrollments';
 }

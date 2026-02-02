@@ -8,6 +8,7 @@ import '../../data/services/category_service.dart';
 import '../../config/routes/route_names.dart';
 import '../../data/services/syllabus_service.dart';
 import '../syllabus/syllabus_detail_screen.dart';
+import '../enrollments/enrollments_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,8 +22,9 @@ class _HomeScreenState extends State<HomeScreen> {
   late final Future<List<Syllabus>> _trialSyllabiFuture;
   late final Future<List<AppCategory>> _categoriesFuture;
   final PageController _categoryController = PageController();
-  final PageController _bannerController =
-      PageController(viewportFraction: 0.92);
+  final PageController _bannerController = PageController(
+    viewportFraction: 0.92,
+  );
   Timer? _bannerTimer;
   int _currentBanner = 0;
   int _currentCategoryPage = 0;
@@ -74,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final result = data['result'] as Map;
         final displayName =
             (result['display_name'] ?? result['displayName'])?.toString() ??
-                'User';
+            'User';
         final avatarUrl =
             (result['avatar_url'] ?? result['avatarUrl'])?.toString() ?? '';
         return _ProfileData(
@@ -120,7 +122,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return FutureBuilder<_ProfileData>(
       future: _profileFuture,
       builder: (context, snapshot) {
-        final profile = snapshot.data ??
+        final profile =
+            snapshot.data ??
             const _ProfileData(displayName: 'User', avatarUrl: '');
         final photoUrl = profile.avatarUrl.isEmpty ? null : profile.avatarUrl;
 
@@ -129,9 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
           decoration: const BoxDecoration(
             color: _primaryBlue,
-            borderRadius: BorderRadius.vertical(
-              bottom: Radius.circular(24),
-            ),
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,7 +140,8 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.of(context).pushNamed(RouteNames.profile),
+                    onTap: () =>
+                        Navigator.of(context).pushNamed(RouteNames.profile),
                     child: Container(
                       width: 56,
                       height: 56,
@@ -156,8 +158,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: CircleAvatar(
                         radius: 28,
                         backgroundColor: Colors.transparent,
-                        backgroundImage:
-                            photoUrl == null ? null : NetworkImage(photoUrl),
+                        backgroundImage: photoUrl == null
+                            ? null
+                            : NetworkImage(photoUrl),
                         child: photoUrl == null
                             ? const Icon(Icons.person, color: _primaryBlue)
                             : null,
@@ -259,8 +262,11 @@ class _HomeScreenState extends State<HomeScreen> {
             color: _primaryBlueDark,
             borderRadius: BorderRadius.circular(14),
           ),
-          child: const Icon(Icons.fullscreen_outlined,
-              color: Colors.white, size: 24),
+          child: const Icon(
+            Icons.fullscreen_outlined,
+            color: Colors.white,
+            size: 24,
+          ),
         ),
       ],
     );
@@ -270,18 +276,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Category >',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-            ),
-            TextButton(
-              onPressed: () {},
-              child: const Text('See all'),
-            ),
-          ],
+        const Text(
+          'Category >',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
         FutureBuilder<List<AppCategory>>(
@@ -449,17 +446,16 @@ class _HomeScreenState extends State<HomeScreen> {
               'Trial Syllabus >',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
-            TextButton(
-              onPressed: () {},
-              child: const Text('See all'),
-            ),
+            TextButton(onPressed: () {}, child: const Text('See all')),
           ],
         ),
         const SizedBox(height: 8),
         FutureBuilder<List<Syllabus>>(
           future: _trialSyllabiFuture,
           builder: (context, snapshot) {
-            final items = (snapshot.data ?? const <Syllabus>[]).take(5).toList();
+            final items = (snapshot.data ?? const <Syllabus>[])
+                .take(5)
+                .toList();
 
             if (snapshot.connectionState == ConnectionState.waiting &&
                 items.isEmpty) {
@@ -484,9 +480,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 for (int i = 0; i < items.length; i++) ...[
                   GestureDetector(
                     onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) => SyllabusDetailScreen(syllabusId: items[i].id),
-                      ));
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              SyllabusDetailScreen(syllabusId: items[i].id),
+                        ),
+                      );
                     },
                     child: _buildCourseCard(
                       syllabusId: items[i].id,
@@ -532,10 +531,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.network(
-                        _bannerImages[index],
-                        fit: BoxFit.cover,
-                      ),
+                      Image.network(_bannerImages[index], fit: BoxFit.cover),
                       Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -626,11 +622,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Row(
-                  children: [
-                    _buildCourseChip(language),
-                  ],
-                ),
+                Row(children: [_buildCourseChip(language)]),
               ],
             ),
           ),
@@ -735,10 +727,26 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildBottomItem(icon: Icons.home, label: 'Home', index: 0),
-              _buildBottomItem(icon: Icons.smart_toy_outlined, label: 'AI', index: 1),
-              _buildBottomItem(icon: Icons.book_outlined, label: 'Vocab', index: 2),
-              _buildBottomItem(icon: Icons.school_outlined, label: 'Course', index: 3),
-              _buildBottomItem(icon: Icons.person_outline, label: 'Profile', index: 4),
+              _buildBottomItem(
+                icon: Icons.smart_toy_outlined,
+                label: 'AI',
+                index: 1,
+              ),
+              _buildBottomItem(
+                icon: Icons.school_outlined,
+                label: 'Enrolled',
+                index: 2,
+              ),
+              _buildBottomItem(
+                icon: Icons.book_outlined,
+                label: 'Vocab',
+                index: 3,
+              ),
+              _buildBottomItem(
+                icon: Icons.person_outline,
+                label: 'Profile',
+                index: 4,
+              ),
             ],
           ),
         ),
@@ -757,7 +765,11 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           _selectedIndex = index;
         });
-        if (index == 4) {
+        if (index == 2) {
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const EnrollmentsScreen()));
+        } else if (index == 4) {
           Navigator.of(context).pushNamed(RouteNames.profile);
         }
       },

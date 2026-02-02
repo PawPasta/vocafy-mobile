@@ -19,9 +19,16 @@ class AuthService {
   /// Trả về response data từ server
   Future<Map<String, dynamic>?> signInWithGoogle() async {
     try {
+      if (kDebugMode) print('🔄 Bắt đầu Google Sign-In...');
+
       // 1. Sign in với Google
       final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null; // User hủy
+      if (googleUser == null) {
+        if (kDebugMode) print('❌ User hủy đăng nhập');
+        return null; // User hủy
+      }
+
+      if (kDebugMode) print('✅ Google Sign-In thành công: ${googleUser.email}');
 
       // 2. Lấy Google tokens
       final googleAuth = await googleUser.authentication;
@@ -31,6 +38,8 @@ class AuthService {
       if (idToken == null || accessToken == null) {
         throw Exception('Không lấy được Google token');
       }
+
+      if (kDebugMode) print('🔄 Đăng nhập Firebase...');
 
       // 3. Đăng nhập Firebase bằng credential
       final credential = GoogleAuthProvider.credential(
@@ -47,10 +56,9 @@ class AuthService {
         throw Exception('Không lấy được Firebase ID token');
       }
 
-      // Log trong debug mode
       if (kDebugMode) {
-        print('🔑 Firebase ID Token: $firebaseIdToken');
-        print('📧 Email: ${googleUser.email}');
+        print('✅ Firebase Auth thành công');
+        print('🔄 Gửi token lên server...');
       }
 
       // 5. Gửi Firebase ID token lên server
@@ -60,24 +68,31 @@ class AuthService {
         'fcm_token': fcmToken ?? '',
       });
 
-      // 4. Lưu token từ server (nếu có)
+      if (kDebugMode) print('✅ Server response: ${response.statusCode}');
+
+      // 6. Lưu token từ server (nếu có)
       final result = response.data['result'];
       if (result is Map) {
-        final accessToken = (result['accessToken'] ?? result['access_token'])
-            ?.toString();
+        final serverAccessToken =
+            (result['accessToken'] ?? result['access_token'])?.toString();
         final refreshToken = (result['refreshToken'] ?? result['refresh_token'])
             ?.toString();
 
-        if (accessToken != null && accessToken.isNotEmpty) {
-          await tokenStorage.setAccessToken(accessToken);
-          api.setToken(accessToken);
+        if (serverAccessToken != null && serverAccessToken.isNotEmpty) {
+          await tokenStorage.setAccessToken(serverAccessToken);
+          api.setToken(serverAccessToken);
+          if (kDebugMode) print('✅ Đã lưu access token');
         }
         if (refreshToken != null && refreshToken.isNotEmpty) {
           await tokenStorage.setRefreshToken(refreshToken);
+          if (kDebugMode) print('✅ Đã lưu refresh token');
         }
       }
 
       return response.data;
+    } on FirebaseAuthException catch (e) {
+      if (kDebugMode) print('❌ Firebase Auth Error: ${e.code} - ${e.message}');
+      throw Exception('Lỗi xác thực Firebase: ${e.message}');
     } catch (e) {
       if (kDebugMode) print('❌ Sign-In Error: $e');
       rethrow;

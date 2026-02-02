@@ -214,6 +214,12 @@ class ApiClient {
     return _dio.put(endpoint, data: data);
   }
 
+  /// PATCH request
+  /// Ví dụ: Api.patch('/products/1', {'name': 'iPhone 15'})
+  Future<Response> patch(String endpoint, [dynamic data]) {
+    return _dio.patch(endpoint, data: data);
+  }
+
   /// DELETE request
   /// Ví dụ: Api.delete('/products/1')
   Future<Response> delete(String endpoint, [dynamic data]) {

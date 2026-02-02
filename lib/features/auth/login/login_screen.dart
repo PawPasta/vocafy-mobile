@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../data/data.dart';
+import '../../../data/services/auth_service.dart';
 import '../../../config/routes/route_names.dart';
-import '../../../core/storage/token_storage.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,55 +23,34 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // 1. Lấy Firebase ID Token (sau khi đăng nhập Google qua Firebase Auth)
-      final firebaseIdToken = await authService.getFirebaseIdToken();
-
-      if (firebaseIdToken == null) {
-        // User hủy đăng nhập
-        if (mounted) setState(() => _isLoading = false);
-        return;
-      }
-
-      // 2. Gửi Firebase ID token + FCM token về server
-      final fcmToken = await tokenStorage.getFcmToken();
-      final response = await api.post(Api.loginGoogle, {
-        'id_token': firebaseIdToken,
-        'fcm_token': fcmToken ?? '',
-      });
+      // Sử dụng signInWithGoogle() - đã xử lý đầy đủ:
+      // 1. Google Sign-In
+      // 2. Firebase Auth
+      // 3. Gửi token lên server
+      // 4. Lưu access/refresh token
+      final response = await authService.signInWithGoogle();
 
       if (!mounted) return;
 
-      // 3. Xử lý response từ server
-      if (response.data != null) {
-        // Lưu access token từ server (nếu có)
-        final result = response.data['result'];
-        if (result is Map) {
-          final accessToken = (result['accessToken'] ?? result['access_token'])
-              ?.toString();
-          final refreshToken =
-              (result['refreshToken'] ?? result['refresh_token'])?.toString();
-
-          if (accessToken != null && accessToken.isNotEmpty) {
-            await tokenStorage.setAccessToken(accessToken);
-            api.setToken(accessToken);
-          }
-          if (refreshToken != null && refreshToken.isNotEmpty) {
-            await tokenStorage.setRefreshToken(refreshToken);
-          }
-        }
-
-        // Thành công - chuyển đến home
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          RouteNames.home,
-          (route) => false,
-        );
+      if (response == null) {
+        // User hủy đăng nhập
+        setState(() => _isLoading = false);
+        return;
       }
+
+      // Thành công - chuyển đến home
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        RouteNames.home,
+        (route) => false,
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Đăng nhập thất bại: $e'),
+          content: Text(
+            'Login failed: ${e.toString().replaceAll('Exception: ', '')}',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -85,40 +63,81 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _pageBg,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                children: [
-                  const SizedBox(height: 32),
-                  _buildLogo(),
-                  const SizedBox(height: 34),
-                ],
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Padding(
+      body: Stack(
+        children: [
+          SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     children: [
-                      const SizedBox(height: 78),
-                      _buildHero(),
-                      const SizedBox(height: 22),
-                      _buildTitle(),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 32),
+                      _buildLogo(),
+                      const SizedBox(height: 34),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 78),
+                          _buildHero(),
+                          const SizedBox(height: 22),
+                          _buildTitle(),
+                          const SizedBox(height: 18),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                _buildBottomPanel(context),
+              ],
+            ),
+          ),
+          // Loading overlay
+          if (_isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.4),
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 20,
+                      ),
+                    ],
+                  ),
+                  child: const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(_primaryBlue),
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'Signing in...',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
             ),
-            _buildBottomPanel(context),
-          ],
-        ),
+        ],
       ),
     );
   }

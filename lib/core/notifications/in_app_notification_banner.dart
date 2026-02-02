@@ -16,7 +16,7 @@ class InAppNotificationBanner {
     // Avoid stacking many banners.
     hide();
 
-    final overlay = Overlay.of(context, rootOverlay: true);
+    final overlay = Overlay.maybeOf(context, rootOverlay: true);
     if (overlay == null) return;
 
     _shownAt = DateTime.now();
@@ -39,7 +39,8 @@ class InAppNotificationBanner {
 
     Future<void>.delayed(duration, () {
       // Only auto-hide if this is still the latest banner.
-      if (_shownAt != null && DateTime.now().difference(_shownAt!) >= duration) {
+      if (_shownAt != null &&
+          DateTime.now().difference(_shownAt!) >= duration) {
         hide();
       }
     });
@@ -181,7 +182,10 @@ class _AnimatedBannerState extends State<_AnimatedBanner>
                         ),
                         IconButton(
                           onPressed: widget.onClose,
-                          icon: Icon(Icons.close, color: fg.withValues(alpha: 0.7)),
+                          icon: Icon(
+                            Icons.close,
+                            color: fg.withValues(alpha: 0.7),
+                          ),
                           splashRadius: 20,
                           tooltip: 'Close',
                         ),
