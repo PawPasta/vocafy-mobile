@@ -52,7 +52,6 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     final syllabusId = widget.syllabusId ?? 0;
 
     final learningSet = await learningService.startLearning(
-      courseId: course.id,
       syllabusId: syllabusId,
     );
 

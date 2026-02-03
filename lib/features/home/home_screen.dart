@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/api/api_client.dart';
 import '../../core/api/api_endpoints.dart';
-import '../../core/storage/token_storage.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/models/category.dart';
 import '../../data/models/syllabus.dart';
@@ -56,7 +55,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _trialSyllabiFuture = syllabusService.listSyllabi(page: 0, size: 10);
     _categoriesFuture = categoryService.listCategories(page: 0, size: 10);
     _enrollmentsFuture = enrollmentService.listEnrollments(page: 0, size: 20);
-    _loadFocusedSyllabusIfNeeded();
     _bannerTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (_bannerImages.isEmpty || !_bannerController.hasClients) return;
       final nextPage = (_currentBanner + 1) % _bannerImages.length;
@@ -66,23 +64,6 @@ class _HomeScreenState extends State<HomeScreen> {
         curve: Curves.easeInOut,
       );
     });
-  }
-
-  /// Load focused syllabus ID from API and save to storage on first login
-  /// This runs in the background without blocking UI
-  Future<void> _loadFocusedSyllabusIfNeeded() async {
-    // Check if already loaded to avoid redundant API calls
-    final isLoaded = await tokenStorage.isFocusedSyllabusLoaded();
-    if (isLoaded) return;
-
-    // Fetch focused enrollment from API
-    final focused = await enrollmentService.getFocusedEnrollment();
-    if (focused != null) {
-      // Save syllabus ID to storage
-      await tokenStorage.setFocusedSyllabusId(focused.syllabusId);
-    }
-    // Mark as loaded so we don't call again
-    await tokenStorage.setFocusedSyllabusLoaded(true);
   }
 
   @override

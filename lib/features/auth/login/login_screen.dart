@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../data/services/auth_service.dart';
-import '../../../data/services/enrollment_service.dart';
-import '../../../core/storage/token_storage.dart';
 import '../../../config/routes/route_names.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -20,21 +18,6 @@ class _LoginScreenState extends State<LoginScreen> {
   static const Color _pageBg = Colors.white;
 
   bool _isLoading = false;
-
-  /// Gọi API get focused enrollment và lưu syllabus ID vào storage
-  /// Chỉ chạy 1 lần sau khi login thành công
-  Future<void> _loadFocusedEnrollment() async {
-    try {
-      final focused = await enrollmentService.getFocusedEnrollment();
-      // Lưu syllabus ID đang focus vào storage (clear nếu server không có focus)
-      await tokenStorage.setFocusedSyllabusId(focused?.syllabusId);
-
-      // Đánh dấu đã load xong để không cần gọi lại
-      await tokenStorage.setFocusedSyllabusLoaded(true);
-    } catch (e) {
-      // Không set loaded để home/learning có thể retry sau.
-    }
-  }
 
   Future<void> _onGoogleSignInPressed() async {
     if (_isLoading) return;
@@ -56,10 +39,6 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() => _isLoading = false);
         return;
       }
-
-      // Login thành công → Gọi API get focused enrollment và lưu vào storage
-      // Không block UI login; vẫn đảm bảo chỉ gọi đúng 1 lần.
-      unawaited(_loadFocusedEnrollment());
 
       // Thành công - chuyển đến home
       Navigator.pushNamedAndRemoveUntil(
