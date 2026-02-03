@@ -4,6 +4,85 @@ import 'api_endpoints.dart';
 import '../navigation/app_navigation_service.dart';
 import '../storage/token_storage.dart';
 
+class ApiServerException implements Exception {
+  final String message;
+  final int? statusCode;
+  final String method;
+  final String path;
+
+  const ApiServerException({
+    required this.message,
+    required this.method,
+    required this.path,
+    this.statusCode,
+  });
+
+  @override
+  String toString() => message;
+}
+
+String? _extractServerMessage(dynamic data) {
+  if (data is Map) {
+    final message = data['message'] ?? data['error'] ?? data['detail'];
+    if (message != null && message.toString().trim().isNotEmpty) {
+      return message.toString();
+    }
+
+    final errors = data['errors'];
+    if (errors is List && errors.isNotEmpty) {
+      // Best-effort: join the first few items.
+      final parts = errors.take(3).map((e) => e.toString()).toList();
+      final joined = parts.join(' | ').trim();
+      if (joined.isNotEmpty) return joined;
+    }
+  }
+  if (data is String && data.trim().isNotEmpty) return data;
+  return null;
+}
+
+String _describeDioException(DioException error) {
+  switch (error.type) {
+    case DioExceptionType.connectionTimeout:
+      return 'Connection timeout';
+    case DioExceptionType.sendTimeout:
+      return 'Send timeout';
+    case DioExceptionType.receiveTimeout:
+      return 'Receive timeout';
+    case DioExceptionType.badCertificate:
+      return 'Bad TLS certificate';
+    case DioExceptionType.connectionError:
+      return 'Connection error';
+    case DioExceptionType.cancel:
+      return 'Request cancelled';
+    case DioExceptionType.badResponse:
+      return 'Bad response';
+    case DioExceptionType.unknown:
+      // Often contains SocketException / other info.
+      final raw = error.error?.toString().trim();
+      return (raw == null || raw.isEmpty) ? 'Unknown error' : raw;
+  }
+}
+
+String _formatApiErrorLog({
+  required String method,
+  required String path,
+  required int? statusCode,
+  required String message,
+  required dynamic data,
+}) {
+  final code = statusCode == null ? 'no-status' : statusCode.toString();
+  final msg = message.trim().isEmpty ? 'Unknown error' : message.trim();
+  final details = _extractServerMessage(data);
+
+  // Keep log concise but useful.
+  // Example: [API ERROR] POST /learning-sets (200) -> Invalid token
+  final base = '[API ERROR] $method $path ($code) -> $msg';
+  if (details != null && details != msg) {
+    return '$base\n  serverMessage: $details';
+  }
+  return base;
+}
+
 /// API Client đơn giản
 /// Sử dụng: Api.get('/users'), Api.post('/auth/login', data)
 class ApiClient {
@@ -41,17 +120,88 @@ class ApiClient {
       ),
     );
 
+    // Convert API envelope {success:false, message:"..."} into a consistent error,
+    // and always log a clear server message (even if callers swallow exceptions).
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onResponse: (response, handler) {
+          final serverMessage = _extractServerMessage(response.data);
+          final isExplicitFailure =
+              response.data is Map &&
+              (response.data as Map)['success'] == false;
+
+          if (isExplicitFailure) {
+            final ex = ApiServerException(
+              message: serverMessage ?? 'Request failed',
+              statusCode: response.statusCode,
+              method: response.requestOptions.method,
+              path: response.requestOptions.path,
+            );
+
+            if (kDebugMode) {
+              debugPrint(
+                _formatApiErrorLog(
+                  method: response.requestOptions.method,
+                  path: response.requestOptions.path,
+                  statusCode: response.statusCode,
+                  message: ex.message,
+                  data: response.data,
+                ),
+              );
+            }
+
+            return handler.reject(
+              DioException(
+                requestOptions: response.requestOptions,
+                response: response,
+                type: DioExceptionType.badResponse,
+                error: ex,
+              ),
+            );
+          }
+
+          // Some BE returns success=true but still embeds an error message field.
+          // Keep the response as-is, but having serverMessage extracted here is useful
+          // for debugging (LogInterceptor already prints bodies in debug).
+          return handler.next(response);
+        },
+        onError: (error, handler) {
+          // Ensure we log a clear error reason from server/network.
+          if (kDebugMode) {
+            final req = error.requestOptions;
+            final statusCode = error.response?.statusCode;
+            final msg =
+                _extractServerMessage(error.response?.data) ??
+                _describeDioException(error);
+            debugPrint(
+              _formatApiErrorLog(
+                method: req.method,
+                path: req.path,
+                statusCode: statusCode,
+                message: msg,
+                data: error.response?.data,
+              ),
+            );
+          }
+          return handler.next(error);
+        },
+      ),
+    );
+
     // Log trong debug mode
     if (kDebugMode) {
       _dio.interceptors.add(
-        LogInterceptor(requestBody: true, responseBody: true),
+        LogInterceptor(
+          requestHeader: true,
+          requestBody: true,
+          responseBody: true,
+        ),
       );
     }
 
     _dio.interceptors.add(
       InterceptorsWrapper(
         onError: (error, handler) async {
-          final statusCode = error.response?.statusCode;
           final request = error.requestOptions;
 
           // If refresh token itself is invalid/expired, immediately force logout.
@@ -71,8 +221,10 @@ class ApiClient {
             return handler.next(error);
           }
 
+          // Some backends return auth errors with 200/400 plus message like
+          // "Invalid token". In that case, we still want to attempt refresh.
           final shouldTryRefresh =
-              statusCode == 401 && _shouldAttemptRefresh(request);
+              _isAuthInvalidError(error) && _shouldAttemptRefresh(request);
           if (!shouldTryRefresh) {
             return handler.next(error);
           }
