@@ -148,7 +148,6 @@ class AuthService {
     await FirebaseAuth.instance.signOut();
     api.clearToken();
     await tokenStorage.clearAuthTokens();
-    await tokenStorage.clearFocusedSyllabus();
   }
 
   /// Logout server + clear local tokens.

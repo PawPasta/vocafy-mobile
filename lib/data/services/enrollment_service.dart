@@ -97,23 +97,6 @@ class EnrollmentService {
       return null;
     }
   }
-
-  /// Set focused enrollment
-  /// PATCH /api/enrollments/focused with { "syllabus_id": syllabusId }
-  Future<bool> setFocusedEnrollment(int syllabusId) async {
-    try {
-      final response = await api.patch('${Api.enrollments}/focused', {
-        'syllabus_id': syllabusId,
-      });
-
-      return response.statusCode == 200;
-    } catch (e) {
-      if (kDebugMode) {
-        print('❌ setFocusedEnrollment error: $e');
-      }
-      return false;
-    }
-  }
 }
 
 final enrollmentService = EnrollmentService.instance;
