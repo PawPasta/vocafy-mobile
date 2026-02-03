@@ -26,7 +26,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
   late final List<int> _learnedVocabIds;
   late final List<GlobalKey<FlipCardState>> _cardKeys;
   int _currentIndex = 0;
-  bool _isFlipped = false;
+  final Set<int> _seenBackIndexes = <int>{};
   bool _isCompleting = false;
   final FlutterTts _tts = FlutterTts();
 
@@ -63,16 +63,26 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
     // Set _isFlipped = true khi flip sang mặt sau (nghĩa tiếng Anh)
     // Giữ nguyên _isFlipped = true khi flip lại để không cần flip 2 lần
     if (!isFront) {
-      setState(() => _isFlipped = true);
+      setState(() => _seenBackIndexes.add(_currentIndex));
       final id = _cards[_currentIndex].vocabId;
       if (!_learnedVocabIds.contains(id)) _learnedVocabIds.add(id);
     }
   }
 
+  bool get _canNavigateFromCurrent => _seenBackIndexes.contains(_currentIndex);
+
+  void _showFlipFirstSnack() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Hãy lật thẻ trước!'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+  }
+
   void _next() {
     if (_currentIndex < _cards.length - 1) {
       setState(() {
-        _isFlipped = false;
         _currentIndex++;
       });
     }
@@ -81,7 +91,6 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
   void _prev() {
     if (_currentIndex > 0) {
       setState(() {
-        _isFlipped = false;
         _currentIndex--;
       });
     }
@@ -170,7 +179,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
             const Spacer(),
             // Card with 40% height
             SizedBox(
-              height: h * 0.40,
+              height: h * 0.48,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: FlipCard(
@@ -422,17 +431,9 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
           child: _navBtn(
             isLast ? 'Hoàn thành' : 'Tiếp theo',
             isLast ? Icons.check : Icons.arrow_forward,
-            _isFlipped,
+            _canNavigateFromCurrent,
             () {
-              if (!_isFlipped) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Hãy lật thẻ trước!'),
-                    duration: Duration(seconds: 1),
-                  ),
-                );
-                return;
-              }
+              if (!_canNavigateFromCurrent) return _showFlipFirstSnack();
               isLast ? _complete() : _next();
             },
             primary: true,

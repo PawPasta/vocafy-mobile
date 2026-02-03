@@ -15,46 +15,87 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
   List<Enrollment> _enrollments = [];
   bool _loadingEnrollments = false;
 
-  final PageController _enrolledController = PageController(
-    viewportFraction: 0.85,
-  );
-  int _currentEnrolledPage = 0;
+  final ScrollController _scrollController = ScrollController();
+  int _page = 0;
+  static const int _pageSize = 25;
+  bool _hasMore = true;
 
   static const _primaryBlue = Color(0xFF4F6CFF);
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _loadData();
   }
 
   @override
   void dispose() {
-    _enrolledController.dispose();
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
     super.dispose();
   }
 
   Future<void> _loadData() async {
-    await _loadEnrollments(force: true);
+    await _refreshEnrollments();
   }
 
-  Future<void> _loadEnrollments({bool force = false}) async {
+  Future<void> _refreshEnrollments() async {
+    _page = 0;
+    _hasMore = true;
+    setState(() {
+      _enrollments = [];
+    });
+    await _loadNextPage(force: true);
+  }
+
+  Future<void> _loadNextPage({bool force = false}) async {
     if (_loadingEnrollments && !force) return;
+    if (!_hasMore && !force) return;
+
     setState(() => _loadingEnrollments = true);
-    final enrollments = await enrollmentService.listEnrollments(
-      page: 0,
-      size: 20,
-    );
-    if (mounted) {
+    try {
+      final enrollments = await enrollmentService.listEnrollments(
+        page: _page,
+        size: _pageSize,
+      );
+
+      if (!mounted) return;
+
       setState(() {
-        _enrollments = enrollments;
+        if (_page == 0) {
+          _enrollments = enrollments;
+        } else {
+          _enrollments.addAll(enrollments);
+        }
+
         _loadingEnrollments = false;
+        if (enrollments.length < _pageSize) {
+          _hasMore = false;
+        } else {
+          _page += 1;
+        }
       });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingEnrollments = false);
+    }
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    if (_loadingEnrollments || !_hasMore) return;
+    final position = _scrollController.position;
+    if (position.pixels >= position.maxScrollExtent - 400) {
+      _loadNextPage();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final showEmptyState = !_loadingEnrollments && _enrollments.isEmpty;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -64,16 +105,76 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _loadData,
-                child: SingleChildScrollView(
+                child: ListView.builder(
+                  controller: _scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 20),
-                      _buildEnrolledSection(),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
+                  padding: const EdgeInsets.only(top: 20, bottom: 24),
+                  itemCount:
+                      1 +
+                      (showEmptyState ? 1 : _enrollments.length) +
+                      (_hasMore ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return _buildEnrolledSectionHeader();
+                    }
+
+                    if (showEmptyState && index == 1) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Container(
+                          padding: const EdgeInsets.all(32),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.school_outlined,
+                                size: 56,
+                                color: Colors.grey.shade400,
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'No courses enrolled',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Explore and enroll in courses from the home page',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.grey.shade600),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    final itemIndex = index - 1;
+                    if (itemIndex < _enrollments.length) {
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                        child: SizedBox(
+                          height: 155,
+                          child: _buildEnrollmentListCard(
+                            _enrollments[itemIndex],
+                          ),
+                        ),
+                      );
+                    }
+
+                    // Load-more indicator
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 26),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  },
                 ),
               ),
             ),
@@ -81,6 +182,39 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
         ),
       ),
       bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  Widget _buildEnrolledSectionHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: _primaryBlue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.library_books_outlined,
+              color: _primaryBlue,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Text(
+            'All Courses',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
+          const Spacer(),
+          if (_enrollments.isNotEmpty)
+            Text(
+              '${_enrollments.length}+ courses',
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+            ),
+        ],
+      ),
     );
   }
 
@@ -129,130 +263,9 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
     );
   }
 
-  Widget _buildEnrolledSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: _primaryBlue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.library_books_outlined,
-                  color: _primaryBlue,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'All Courses',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-              const Spacer(),
-              if (_enrollments.isNotEmpty)
-                Text(
-                  '${_enrollments.length} courses',
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        if (_loadingEnrollments)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(40),
-              child: CircularProgressIndicator(),
-            ),
-          )
-        else if (_enrollments.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.school_outlined,
-                    size: 56,
-                    color: Colors.grey.shade400,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'No courses enrolled',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black54,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Explore and enroll in courses from the home page',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey.shade600),
-                  ),
-                ],
-              ),
-            ),
-          )
-        else
-          Column(
-            children: [
-              SizedBox(
-                height: 200,
-                child: PageView.builder(
-                  controller: _enrolledController,
-                  itemCount: _enrollments.length,
-                  onPageChanged: (index) {
-                    setState(() => _currentEnrolledPage = index);
-                  },
-                  itemBuilder: (context, index) {
-                    return _buildEnrollmentCarouselCard(_enrollments[index]);
-                  },
-                ),
-              ),
-              if (_enrollments.length > 1) ...[
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    _enrollments.length > 5 ? 5 : _enrollments.length,
-                    (index) {
-                      final isActive =
-                          _currentEnrolledPage == index ||
-                          (_enrollments.length > 5 &&
-                              _currentEnrolledPage >= 5 &&
-                              index == 4);
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: isActive ? 20 : 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: isActive ? _primaryBlue : Colors.grey.shade300,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ],
-          ),
-      ],
-    );
+  Widget _buildEnrollmentListCard(Enrollment enrollment) {
+    // Reuse the existing carousel card UI but make it fit a vertical list.
+    return _buildEnrollmentCarouselCard(enrollment);
   }
 
   Widget _buildEnrollmentCarouselCard(Enrollment enrollment) {

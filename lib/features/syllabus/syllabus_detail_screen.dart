@@ -6,6 +6,7 @@ import '../../data/models/syllabus_detail.dart';
 import '../topic/topic_detail_screen.dart';
 import '../enrollments/enrollments_screen.dart';
 import '../learning/flashcard_screen.dart';
+import '../learning/quiz_screen.dart';
 
 class SyllabusDetailScreen extends StatefulWidget {
   final int syllabusId;
@@ -504,9 +505,13 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
                   return GestureDetector(
                     onTap: () {
                       _glowController.stop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Chức năng kiểm tra đang phát triển!'),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => QuizScreen(
+                            syllabusId: widget.syllabusId,
+                            syllabusTitle: 'Kiểm tra từ vựng',
+                          ),
                         ),
                       );
                     },

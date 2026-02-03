@@ -251,7 +251,6 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
 
   Future<void> _startLearning(TopicCourse course, int? syllabusId) async {
     final learningSet = await learningService.startLearning(
-      courseId: course.id,
       syllabusId: syllabusId ?? 0,
     );
 
