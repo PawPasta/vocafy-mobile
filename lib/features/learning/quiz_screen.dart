@@ -46,6 +46,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   final TextEditingController _answerController = TextEditingController();
   final FocusNode _answerFocusNode = FocusNode();
   String? _inputError;
+  int _inputMismatchAttempts = 0;
 
   final FlutterTts _tts = FlutterTts();
   late AnimationController _fadeController;
@@ -102,7 +103,10 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     });
 
     try {
-      final questions = await quizService.getLearnedQuestions();
+      final questions = await quizService.getLearnedQuestions().timeout(
+        const Duration(seconds: 12),
+      );
+      if (!mounted) return;
       if (questions.isEmpty) {
         setState(() {
           _isLoading = false;
@@ -119,6 +123,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
         _fadeController.forward();
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _error = 'Không thể tải câu hỏi. Vui lòng thử lại.';
@@ -175,8 +180,6 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     if (stage3Count < stage2Count) stage3Count = stage2Count;
     if (stage4Count < stage3Count) {
       // Recalculate with adjustment
-      final total = stage1Count + stage2Count + stage3Count + stage4Count;
-      final diff = total - totalQuestions;
       stage4Count = totalQuestions - stage1Count - stage2Count - stage3Count;
     }
 
@@ -258,13 +261,48 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     );
 
     if (matched.id == 0) {
+      final nextAttempts = _inputMismatchAttempts + 1;
       setState(() {
-        _inputError = 'Không khớp đáp án nào. Hãy kiểm tra chính tả.';
+        _inputMismatchAttempts = nextAttempts;
+        _inputError = nextAttempts >= 2
+            ? 'Sai 2 lần rồi. Tự động bỏ qua câu này.'
+            : 'Không khớp đáp án nào. Hãy kiểm tra chính tả. ($nextAttempts/2)';
       });
+      if (nextAttempts >= 2) {
+        _skipCurrentQuestion();
+      }
       return;
     }
 
+    setState(() {
+      _inputMismatchAttempts = 0;
+    });
     await _submitAnswer(question: question, answer: matched, optionIndex: null);
+  }
+
+  void _skipCurrentQuestion() {
+    final question = _questions[_currentIndex];
+
+    // Still track term types for pronunciation challenge.
+    if (question.questionType == 'LOOK_TERM_SELECT_MEANING') {
+      final termText = question.questionRef?.text;
+      if (termText != null && termText.isNotEmpty) {
+        _stageTermsForPronunciation.add(termText);
+      }
+    }
+
+    setState(() {
+      _hasAnswered = true;
+      _isSubmitting = false;
+      _selectedOptionIndex = null;
+      _lastResult = null;
+    });
+
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      if (mounted) {
+        _nextQuestion();
+      }
+    });
   }
 
   Future<void> _submitAnswer({
@@ -278,35 +316,52 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
       _inputError = null;
     });
 
-    // Submit answer to API
-    final result = await quizService.submitAnswer(
-      questionType: question.questionType,
-      refType: question.questionRef?.type ?? '',
-      refId: question.questionRef?.id ?? 0,
-      answerId: answer.id,
-    );
+    AnswerResult? result;
+    try {
+      result = await quizService
+          .submitAnswer(
+            questionType: question.questionType,
+            refType: question.questionRef?.type ?? '',
+            refId: question.questionRef?.id ?? 0,
+            answerId: answer.id,
+          )
+          .timeout(const Duration(seconds: 12));
+    } catch (_) {
+      result = null;
+    }
 
     if (!mounted) return;
+
+    if (result == null) {
+      setState(() {
+        _isSubmitting = false;
+        _selectedOptionIndex = null;
+        _inputError = question.questionType == 'LOOK_TERM_SELECT_MEANING'
+            ? 'Mạng chậm hoặc lỗi hệ thống. Thử lại nhé.'
+            : null;
+      });
+      return;
+    }
+
+    final AnswerResult nonNullResult = result;
 
     setState(() {
       _hasAnswered = true;
       _isSubmitting = false;
-      _lastResult = result;
+      _lastResult = nonNullResult;
 
-      if (result != null) {
-        _currentCorrectStreak = result.correctStreak;
-        _currentWrongStreak = result.wrongStreak;
+      _currentCorrectStreak = nonNullResult.correctStreak;
+      _currentWrongStreak = nonNullResult.wrongStreak;
 
-        if (result.isCorrect) {
-          _correctAnswers++;
-          _stageCorrectAnswers++;
-          if (result.correctStreak > _maxCorrectStreak) {
-            _maxCorrectStreak = result.correctStreak;
-          }
-        } else {
-          if (result.wrongStreak > _maxWrongStreak) {
-            _maxWrongStreak = result.wrongStreak;
-          }
+      if (nonNullResult.isCorrect) {
+        _correctAnswers++;
+        _stageCorrectAnswers++;
+        if (nonNullResult.correctStreak > _maxCorrectStreak) {
+          _maxCorrectStreak = nonNullResult.correctStreak;
+        }
+      } else {
+        if (nonNullResult.wrongStreak > _maxWrongStreak) {
+          _maxWrongStreak = nonNullResult.wrongStreak;
         }
       }
 
@@ -354,12 +409,14 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     // Move to next question
     if (_currentIndex < _questions.length - 1) {
       _fadeController.reverse().then((_) {
+        if (!mounted) return;
         setState(() {
           _currentIndex++;
           _selectedOptionIndex = null;
           _hasAnswered = false;
           _lastResult = null;
           _inputError = null;
+          _inputMismatchAttempts = 0;
           _answerController.clear();
         });
         _fadeController.forward();
@@ -1325,12 +1382,11 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     final isImageQuestion =
         questionType == 'LOOK_IMAGE_SELECT_TERM' ||
         questionType == 'LOOK_IMAGE_SELECT_MEANING';
-    final hasImage =
-        question.questionRef?.url != null &&
-        question.questionRef!.url!.isNotEmpty;
+    final imageUrl = question.questionRef?.url;
+    final hasImage = imageUrl != null && imageUrl.isNotEmpty;
 
-    String? refText = question.questionRef?.text;
-    bool showSpeaker = question.questionRef?.type == 'TERM' && refText != null;
+    final refText = question.questionRef?.text;
+    final showSpeaker = question.questionRef?.type == 'TERM' && refText != null;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -1374,7 +1430,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
               ),
               if (showSpeaker)
                 GestureDetector(
-                  onTap: () => _speakText(refText!),
+                  onTap: () => _speakText(refText),
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -1400,7 +1456,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                 width: double.infinity,
                 color: Colors.white.withValues(alpha: 0.1),
                 child: Image.network(
-                  question.questionRef!.url!,
+                  imageUrl,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
                     return const Center(

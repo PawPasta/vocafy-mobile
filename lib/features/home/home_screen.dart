@@ -52,9 +52,24 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _profileFuture = _fetchProfile();
-    _trialSyllabiFuture = syllabusService.listSyllabi(page: 0, size: 10);
-    _categoriesFuture = categoryService.listCategories(page: 0, size: 10);
-    _enrollmentsFuture = enrollmentService.listEnrollments(page: 0, size: 20);
+    _trialSyllabiFuture = syllabusService
+        .listSyllabi(page: 0, size: 10)
+        .timeout(
+          const Duration(seconds: 12),
+          onTimeout: () => const <Syllabus>[],
+        );
+    _categoriesFuture = categoryService
+        .listCategories(page: 0, size: 10)
+        .timeout(
+          const Duration(seconds: 12),
+          onTimeout: () => const <AppCategory>[],
+        );
+    _enrollmentsFuture = enrollmentService
+        .listEnrollments(page: 0, size: 20)
+        .timeout(
+          const Duration(seconds: 12),
+          onTimeout: () => const <Enrollment>[],
+        );
     _bannerTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (_bannerImages.isEmpty || !_bannerController.hasClients) return;
       final nextPage = (_currentBanner + 1) % _bannerImages.length;
@@ -76,7 +91,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<_ProfileData> _fetchProfile() async {
     try {
-      final response = await api.get(Api.profile);
+      final response = await api
+          .get(Api.profile)
+          .timeout(const Duration(seconds: 10));
       final data = response.data;
       if (data is Map && data['result'] is Map) {
         final result = data['result'] as Map;
@@ -284,7 +301,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (ok != true) return;
 
             await authService.logout();
-            if (!context.mounted) return;
+            if (!mounted) return;
             Navigator.of(
               context,
             ).pushNamedAndRemoveUntil(RouteNames.login, (route) => false);

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
-import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// Dialog for pronunciation challenge after completing a stage
@@ -95,6 +94,7 @@ class _PronunciationChallengeDialogState
     // Request microphone permission
     final status = await Permission.microphone.request();
     if (status != PermissionStatus.granted) {
+      if (!mounted) return;
       setState(() {
         _statusMessage = 'Cần quyền truy cập microphone';
         _speechEnabled = false;
@@ -107,6 +107,7 @@ class _PronunciationChallengeDialogState
         onStatus: _onSpeechStatus,
         onError: (error) {
           debugPrint('Speech error: ${error.errorMsg}');
+          if (!mounted) return;
           setState(() {
             _isListening = false;
             _statusMessage = 'Lỗi nhận diện. Thử lại nhé!';
@@ -115,6 +116,7 @@ class _PronunciationChallengeDialogState
         },
       );
 
+      if (!mounted) return;
       setState(() {
         if (!_speechEnabled) {
           _statusMessage = 'Không thể khởi tạo nhận diện giọng nói';
@@ -122,6 +124,7 @@ class _PronunciationChallengeDialogState
       });
     } catch (e) {
       debugPrint('Speech init error: $e');
+      if (!mounted) return;
       setState(() {
         _speechEnabled = false;
         _statusMessage = 'Lỗi khởi tạo. Kiểm tra quyền microphone.';
@@ -132,6 +135,7 @@ class _PronunciationChallengeDialogState
   void _onSpeechStatus(String status) {
     debugPrint('Speech status: $status');
     if (status == 'done' || status == 'notListening') {
+      if (!mounted) return;
       setState(() {
         _isListening = false;
       });
