@@ -156,7 +156,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
                                 begin: Alignment.bottomCenter,
                                 end: Alignment.topCenter,
                                 colors: [
-                                  Colors.black.withOpacity(0.25),
+                                  Colors.black.withValues(alpha: 0.25),
                                   Colors.transparent,
                                 ],
                               ),
@@ -167,7 +167,9 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
                             left: 12,
                             top: 12,
                             child: CircleAvatar(
-                              backgroundColor: Colors.white.withOpacity(0.8),
+                              backgroundColor: Colors.white.withValues(
+                                alpha: 0.8,
+                              ),
                               child: IconButton(
                                 icon: const Icon(Icons.arrow_back),
                                 onPressed: () =>
@@ -180,7 +182,9 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
                             right: 12,
                             top: 12,
                             child: CircleAvatar(
-                              backgroundColor: Colors.white.withOpacity(0.8),
+                              backgroundColor: Colors.white.withValues(
+                                alpha: 0.8,
+                              ),
                               child: IconButton(
                                 icon: const Icon(Icons.local_fire_department),
                                 onPressed: () {},
@@ -366,7 +370,9 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
                                     Text(
                                       '${topic.courses.length} lessons',
                                       style: TextStyle(
-                                        color: Colors.white.withOpacity(0.8),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.8,
+                                        ),
                                         fontSize: 12,
                                       ),
                                     ),
@@ -457,7 +463,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.green.withOpacity(0.3),
+                        color: Colors.green.withValues(alpha: 0.3),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -523,8 +529,8 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
                         boxShadow: widget.showTestGlow
                             ? [
                                 BoxShadow(
-                                  color: Colors.orange.withOpacity(
-                                    _glowAnimation.value * 0.6,
+                                  color: Colors.orange.withValues(
+                                    alpha: _glowAnimation.value * 0.6,
                                   ),
                                   blurRadius: 20 * _glowAnimation.value,
                                   spreadRadius: 4 * _glowAnimation.value,
@@ -532,7 +538,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
                               ]
                             : [
                                 BoxShadow(
-                                  color: Colors.orange.withOpacity(0.3),
+                                  color: Colors.orange.withValues(alpha: 0.3),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 ),
@@ -582,7 +588,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: _primaryBlue.withOpacity(0.3),
+                  color: _primaryBlue.withValues(alpha: 0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),

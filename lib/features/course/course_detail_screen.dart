@@ -138,7 +138,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                                color: Colors.white.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Icon(
@@ -173,7 +173,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                         Text(
                           course.description,
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
+                            color: Colors.white.withValues(alpha: 0.8),
                             fontSize: 13,
                           ),
                           maxLines: 2,
@@ -249,7 +249,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: _primaryBlue.withOpacity(0.1),
+                color: _primaryBlue.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: vocab.imageUrl != null

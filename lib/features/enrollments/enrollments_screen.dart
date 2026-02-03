@@ -193,7 +193,7 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: _primaryBlue.withOpacity(0.1),
+              color: _primaryBlue.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(
@@ -233,7 +233,7 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.arrow_back, color: Colors.white),
@@ -253,7 +253,7 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(Icons.school_outlined, color: Colors.white),
@@ -290,7 +290,7 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -327,7 +327,7 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
+                            color: Colors.black.withValues(alpha: 0.15),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -413,7 +413,7 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: _primaryBlue.withOpacity(0.1),
+                              color: _primaryBlue.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
@@ -440,7 +440,7 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
   Widget _buildPlaceholderImage() {
     return Container(
       width: double.infinity,
-      color: _primaryBlue.withOpacity(0.1),
+      color: _primaryBlue.withValues(alpha: 0.1),
       child: const Center(
         child: Icon(Icons.school_outlined, size: 40, color: _primaryBlue),
       ),

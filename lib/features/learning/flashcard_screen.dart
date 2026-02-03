@@ -291,7 +291,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: _blue.withOpacity(0.1),
+              color: _blue.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.volume_up, color: _blue, size: 28),
@@ -339,7 +339,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
           child: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
+              color: Colors.green.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -355,7 +355,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
+              color: Colors.green.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -397,7 +397,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
   Widget _badge(String text) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
     decoration: BoxDecoration(
-      color: _blue.withOpacity(0.1),
+      color: _blue.withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(20),
     ),
     child: Text(

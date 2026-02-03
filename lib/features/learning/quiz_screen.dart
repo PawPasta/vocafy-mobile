@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import '../../data/models/quiz_question.dart';
 import '../../data/services/quiz_service.dart';
+import 'pronunciation_challenge_dialog.dart';
 
 class QuizScreen extends StatefulWidget {
   final int? syllabusId;
@@ -29,6 +30,10 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   int _currentStage = 1;
   List<int> _stageEndIndices = []; // End indices for each stage
   int _stageCorrectAnswers = 0; // Correct answers in current stage
+
+  // Pronunciation challenge tracking
+  List<String> _stageTermsForPronunciation =
+      []; // Terms from LOOK_TERM_SELECT_MEANING in current stage
 
   // Streak tracking
   int _currentCorrectStreak = 0;
@@ -304,6 +309,14 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
           }
         }
       }
+
+      // Track terms from LOOK_TERM_SELECT_MEANING for pronunciation challenge
+      if (question.questionType == 'LOOK_TERM_SELECT_MEANING') {
+        final termText = question.questionRef?.text;
+        if (termText != null && termText.isNotEmpty) {
+          _stageTermsForPronunciation.add(termText);
+        }
+      }
     });
 
     // Animate streak
@@ -321,11 +334,19 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     // Check if this was the last question in current stage
     if (_isLastQuestionInStage) {
       if (_isFinalStage) {
-        // Final stage completed - show final results
-        _showResults();
+        // Final stage completed - check for pronunciation challenge first
+        if (_stageTermsForPronunciation.isNotEmpty) {
+          _showPronunciationChallenge(isFinal: true);
+        } else {
+          _showResults();
+        }
       } else {
-        // Stage completed - show stage completion dialog
-        _showStageCompleteDialog();
+        // Stage completed - check for pronunciation challenge first
+        if (_stageTermsForPronunciation.isNotEmpty) {
+          _showPronunciationChallenge(isFinal: false);
+        } else {
+          _showStageCompleteDialog();
+        }
       }
       return;
     }
@@ -346,6 +367,48 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     } else {
       _showResults();
     }
+  }
+
+  /// Show pronunciation challenge dialog
+  void _showPronunciationChallenge({required bool isFinal}) {
+    // Pick a random term from the collected terms
+    final termText = _stageTermsForPronunciation.isNotEmpty
+        ? _stageTermsForPronunciation[DateTime.now().millisecondsSinceEpoch %
+              _stageTermsForPronunciation.length]
+        : '';
+
+    if (termText.isEmpty) {
+      // No term to challenge, skip to next stage or results
+      if (isFinal) {
+        _showResults();
+      } else {
+        _showStageCompleteDialog();
+      }
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => PronunciationChallengeDialog(
+        termText: termText,
+        isFinalStage: isFinal,
+        currentStage: _currentStage,
+        onComplete: () {
+          Navigator.pop(context);
+          // Clear pronunciation terms for next stage
+          _stageTermsForPronunciation.clear();
+          if (isFinal) {
+            _showResults();
+          } else {
+            _showStageCompleteDialog();
+          }
+        },
+      ),
+    );
   }
 
   void _showStageCompleteDialog() {
@@ -389,14 +452,14 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: isPassed
-                        ? [_correctGreen, _correctGreen.withOpacity(0.7)]
-                        : [Colors.orange, Colors.orange.withOpacity(0.7)],
+                        ? [_correctGreen, _correctGreen.withValues(alpha: 0.7)]
+                        : [Colors.orange, Colors.orange.withValues(alpha: 0.7)],
                   ),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
                       color: (isPassed ? _correctGreen : Colors.orange)
-                          .withOpacity(0.3),
+                          .withValues(alpha: 0.3),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                     ),
@@ -610,6 +673,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     setState(() {
       _currentStage++;
       _stageCorrectAnswers = 0;
+      _stageTermsForPronunciation.clear(); // Clear for new stage
       _currentIndex++;
       _selectedOptionIndex = null;
       _hasAnswered = false;
@@ -657,8 +721,8 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
               height: 100,
               decoration: BoxDecoration(
                 color: isPassed
-                    ? _correctGreen.withOpacity(0.1)
-                    : _wrongRed.withOpacity(0.1),
+                    ? _correctGreen.withValues(alpha: 0.1)
+                    : _wrongRed.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -1013,8 +1077,8 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: isCorrect
-              ? _correctGreen.withOpacity(0.1)
-              : _wrongRed.withOpacity(0.1),
+              ? _correctGreen.withValues(alpha: 0.1)
+              : _wrongRed.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isCorrect ? _correctGreen : _wrongRed,
@@ -1085,7 +1149,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
         Container(
           height: 8,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
+            color: color.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(4),
           ),
           child: FractionallySizedBox(
@@ -1113,7 +1177,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1146,7 +1210,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: _primaryBlue.withOpacity(0.1),
+                        color: _primaryBlue.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -1169,9 +1233,9 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                 ),
                 decoration: BoxDecoration(
                   color: _currentCorrectStreak > 0
-                      ? _correctGreen.withOpacity(0.1)
+                      ? _correctGreen.withValues(alpha: 0.1)
                       : _currentWrongStreak > 0
-                      ? _wrongRed.withOpacity(0.1)
+                      ? _wrongRed.withValues(alpha: 0.1)
                       : Colors.grey[100],
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -1274,12 +1338,12 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [_primaryBlue, _primaryBlue.withOpacity(0.8)],
+          colors: [_primaryBlue, _primaryBlue.withValues(alpha: 0.8)],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: _primaryBlue.withOpacity(0.3),
+            color: _primaryBlue.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -1296,7 +1360,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -1314,7 +1378,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -1334,7 +1398,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
               child: Container(
                 height: 150,
                 width: double.infinity,
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 child: Image.network(
                   question.questionRef!.url!,
                   fit: BoxFit.contain,
@@ -1389,8 +1453,8 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
             question.questionText,
             style: TextStyle(
               fontSize: refText != null && !isImageQuestion ? 16 : 20,
-              color: Colors.white.withOpacity(
-                refText != null && !isImageQuestion ? 0.9 : 1,
+              color: Colors.white.withValues(
+                alpha: refText != null && !isImageQuestion ? 0.9 : 1,
               ),
               fontWeight: refText != null && !isImageQuestion
                   ? FontWeight.w400
@@ -1469,16 +1533,16 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
 
     if (_hasAnswered) {
       if (showAsCorrect) {
-        bgColor = _correctGreen.withOpacity(0.1);
+        bgColor = _correctGreen.withValues(alpha: 0.1);
         borderColor = _correctGreen;
         textColor = _correctGreen;
       } else if (showAsWrong) {
-        bgColor = _wrongRed.withOpacity(0.1);
+        bgColor = _wrongRed.withValues(alpha: 0.1);
         borderColor = _wrongRed;
         textColor = _wrongRed;
       }
     } else if (isSelected) {
-      bgColor = _primaryBlue.withOpacity(0.1);
+      bgColor = _primaryBlue.withValues(alpha: 0.1);
       borderColor = _primaryBlue;
       textColor = _primaryBlue;
     }
