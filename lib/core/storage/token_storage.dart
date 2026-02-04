@@ -9,6 +9,7 @@ class TokenStorage {
   static const _kAccessTokenKey = 'access_token';
   static const _kRefreshTokenKey = 'refresh_token';
   static const _kFcmTokenKey = 'fcm_token';
+  static const _kHasCompletedOnboardingKey = 'has_completed_onboarding';
 
   SharedPreferences? _prefs;
 
@@ -62,6 +63,18 @@ class TokenStorage {
     final prefs = await _getPrefs();
     await prefs.remove(_kAccessTokenKey);
     await prefs.remove(_kRefreshTokenKey);
+  }
+
+  /// Whether the user has already completed/skip onboarding at least once.
+  /// If true, app should bypass splash/onboarding on next launches.
+  Future<bool> getHasCompletedOnboarding() async {
+    final prefs = await _getPrefs();
+    return prefs.getBool(_kHasCompletedOnboardingKey) ?? false;
+  }
+
+  Future<void> setHasCompletedOnboarding(bool value) async {
+    final prefs = await _getPrefs();
+    await prefs.setBool(_kHasCompletedOnboardingKey, value);
   }
 }
 

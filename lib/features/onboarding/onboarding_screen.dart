@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'models/onboarding_model.dart';
 import 'widgets/onboarding_page_widget.dart';
 import '../../config/routes/route_names.dart';
+import '../../core/storage/token_storage.dart';
 
 /// Onboarding screen with multiple pages and smooth animations
 class OnboardingScreen extends StatefulWidget {
@@ -16,26 +17,26 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   late PageController _pageController;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
-  
+
   int _currentPage = 0;
   final int _totalPages = OnboardingModel.pages.length;
 
   @override
   void initState() {
     super.initState();
-    
+
     _pageController = PageController();
-    
+
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-    
+
     _fadeAnimation = CurvedAnimation(
       parent: _fadeController,
       curve: Curves.easeInOut,
     );
-    
+
     _fadeController.forward();
   }
 
@@ -51,7 +52,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     setState(() {
       _currentPage = page;
     });
-    
+
     _fadeController.reset();
     _fadeController.forward();
   }
@@ -84,7 +85,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   /// Complete onboarding and navigate to main app
-  void _completeOnboarding() {
+  Future<void> _completeOnboarding() async {
+    await tokenStorage.setHasCompletedOnboarding(true);
+    if (!mounted) return;
     Navigator.pushReplacementNamed(context, RouteNames.login);
   }
 
@@ -135,30 +138,28 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   )
                 : const SizedBox.shrink(),
           ),
-          
+
           // Logo in center
           Image.asset(
             'lib/assets/images/Logo.png',
             height: 32,
             fit: BoxFit.contain,
           ),
-          
+
           // Skip button (hide on last page)
           SizedBox(
             width: 60,
-            child: _currentPage < _totalPages - 1
-                ? TextButton(
-                    onPressed: _onSkipPressed,
-                    child: Text(
-                      'Skip',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[700],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  )
-                : const SizedBox.shrink(),
+            child: TextButton(
+              onPressed: _onSkipPressed,
+              child: Text(
+                'Skip',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[700],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -171,10 +172,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       padding: const EdgeInsets.all(32.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _buildPageIndicators(),
-          _buildNextButton(),
-        ],
+        children: [_buildPageIndicators(), _buildNextButton()],
       ),
     );
   }
@@ -184,7 +182,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     return Row(
       children: List.generate(_totalPages, (index) {
         final isActive = index == _currentPage;
-        
+
         return AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
@@ -192,9 +190,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           width: isActive ? 32 : 8,
           height: 8,
           decoration: BoxDecoration(
-            color: isActive 
-                ? const Color(0xFF5B7FFF) 
-                : const Color(0xFFE0E0E0),
+            color: isActive ? const Color(0xFF5B7FFF) : const Color(0xFFE0E0E0),
             borderRadius: BorderRadius.circular(4),
           ),
         );
@@ -211,10 +207,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         height: 56,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [
-              Color(0xFF5B7FFF),
-              Color(0xFF4C6FFF),
-            ],
+            colors: [Color(0xFF5B7FFF), Color(0xFF4C6FFF)],
           ),
           borderRadius: BorderRadius.circular(28),
           boxShadow: [

@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
+import '../../config/routes/route_names.dart';
+import '../../core/api/api_client.dart';
+import '../../core/api/api_endpoints.dart';
+import '../../core/storage/token_storage.dart';
+
 /// Splash screen displayed on app launch with animated logo
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -10,12 +15,12 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> 
+class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
   late AnimationController _shimmerController;
   late AnimationController _pulseController;
-  
+
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
   late Animation<double> _shimmerAnimation;
@@ -25,7 +30,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1800),
@@ -41,54 +46,87 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeIn),
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeIn),
+      ),
+    );
 
-    _scaleAnimation = Tween<double>(
-      begin: 0.5,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.2, 0.8, curve: Curves.elasticOut),
-    ));
+    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.2, 0.8, curve: Curves.elasticOut),
+      ),
+    );
 
-    _rotateAnimation = Tween<double>(
-      begin: -0.1,
-      end: 0.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.3, 0.8, curve: Curves.easeOutCubic),
-    ));
+    _rotateAnimation = Tween<double>(begin: -0.1, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.3, 0.8, curve: Curves.easeOutCubic),
+      ),
+    );
 
     _shimmerAnimation = Tween<double>(
       begin: -2.0,
       end: 2.0,
     ).animate(_shimmerController);
 
-    _pulseAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.05,
-    ).animate(CurvedAnimation(
-      parent: _pulseController,
-      curve: Curves.easeInOut,
-    ));
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
 
     _animationController.forward();
-    _navigateToOnboarding();
+
+    // Decide startup flow after first frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handleStartupNavigation();
+    });
   }
 
-  /// Navigate to onboarding screen after splash animation
-  Future<void> _navigateToOnboarding() async {
-    await Future.delayed(const Duration(seconds: 3));
-    
+  Future<void> _handleStartupNavigation() async {
+    final hasCompletedOnboarding = await tokenStorage
+        .getHasCompletedOnboarding();
     if (!mounted) return;
-    
-    Navigator.pushReplacementNamed(context, '/onboarding');
+
+    // First launch: show splash for a bit, then go onboarding.
+    if (!hasCompletedOnboarding) {
+      await Future.delayed(const Duration(seconds: 3));
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, RouteNames.onboarding);
+      return;
+    }
+
+    // Returning user: bypass splash/onboarding and route by token validity.
+    final canEnterApp = await _isSessionValid();
+    if (!mounted) return;
+
+    Navigator.pushReplacementNamed(
+      context,
+      canEnterApp ? RouteNames.home : RouteNames.login,
+    );
+  }
+
+  Future<bool> _isSessionValid() async {
+    final accessToken = await tokenStorage.getAccessToken();
+    if (accessToken == null || accessToken.isEmpty) return false;
+
+    try {
+      // Validate current access token; ApiClient will auto-refresh on 401/403.
+      final res = await api
+          .get(Api.profile)
+          .timeout(const Duration(seconds: 6));
+      final status = res.statusCode ?? 0;
+      return status >= 200 && status < 300;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _skipToLogin() async {
+    await tokenStorage.setHasCompletedOnboarding(true);
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, RouteNames.login);
   }
 
   @override
@@ -107,17 +145,22 @@ class _SplashScreenState extends State<SplashScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFF8F9FA),
-              Color(0xFFFFFFFF),
-              Color(0xFFF0F4FF),
-            ],
+            colors: [Color(0xFFF8F9FA), Color(0xFFFFFFFF), Color(0xFFF0F4FF)],
           ),
         ),
         child: Stack(
           children: [
             ..._buildBackgroundParticles(),
-            
+
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 8,
+              right: 12,
+              child: TextButton(
+                onPressed: _skipToLogin,
+                child: const Text('Skip'),
+              ),
+            ),
+
             Center(
               child: AnimatedBuilder(
                 animation: _animationController,
@@ -157,7 +200,7 @@ class _SplashScreenState extends State<SplashScreen>
       final left = random.nextDouble() * 400;
       final top = random.nextDouble() * 800;
       final delay = random.nextInt(1000);
-      
+
       return Positioned(
         left: left,
         top: top,
@@ -192,7 +235,6 @@ class _SplashScreenState extends State<SplashScreen>
     });
   }
 
-
   Widget _buildLogoWithEffects() {
     return Stack(
       alignment: Alignment.center,
@@ -221,7 +263,7 @@ class _SplashScreenState extends State<SplashScreen>
             );
           },
         ),
-        
+
         ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: AnimatedBuilder(
@@ -251,7 +293,7 @@ class _SplashScreenState extends State<SplashScreen>
             child: _buildVocafyLogo(),
           ),
         ),
-        
+
         _buildVocafyLogo(),
       ],
     );

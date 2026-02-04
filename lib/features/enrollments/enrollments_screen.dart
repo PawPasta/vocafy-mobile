@@ -161,7 +161,7 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
                       return Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
                         child: SizedBox(
-                          height: 155,
+                          height: 186,
                           child: _buildEnrollmentListCard(
                             _enrollments[itemIndex],
                           ),

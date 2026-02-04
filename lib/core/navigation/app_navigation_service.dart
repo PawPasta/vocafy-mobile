@@ -20,6 +20,13 @@ class AppNavigationService {
 
     nav.pushNamedAndRemoveUntil(RouteNames.login, (route) => false);
   }
+
+  void goToHome() {
+    final nav = _navigatorKey?.currentState;
+    if (nav == null) return;
+
+    nav.pushNamedAndRemoveUntil(RouteNames.home, (route) => false);
+  }
 }
 
 final appNavigationService = AppNavigationService.instance;
