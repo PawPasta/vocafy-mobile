@@ -81,6 +81,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
   }
 
   void _next() {
+    if (_isCompleting) return;
     if (_currentIndex < _cards.length - 1) {
       setState(() {
         _currentIndex++;
@@ -89,6 +90,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
   }
 
   void _prev() {
+    if (_isCompleting) return;
     if (_currentIndex > 0) {
       setState(() {
         _currentIndex--;
@@ -97,23 +99,47 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
   }
 
   Future<void> _complete() async {
-    if (_isCompleting) return;
-    setState(() => _isCompleting = true);
+    await _submitLearnedVocabIds(showDoneOnSuccess: true);
+  }
 
+  Future<bool> _submitLearnedVocabIds({required bool showDoneOnSuccess}) async {
+    if (_isCompleting) return false;
+    if (_learnedVocabIds.isEmpty) return true;
+
+    setState(() => _isCompleting = true);
     final ok = await learningService.completeLearning(_learnedVocabIds);
 
-    if (mounted) {
-      setState(() => _isCompleting = false);
-      if (ok) {
-        _showDone();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Lỗi kết nối'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    if (!mounted) return ok;
+    setState(() => _isCompleting = false);
+
+    if (ok) {
+      if (showDoneOnSuccess) _showDone();
+      return true;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Lỗi kết nối'), backgroundColor: Colors.red),
+    );
+    return false;
+  }
+
+  Future<void> _saveProgressAndExit() async {
+    if (_learnedVocabIds.isEmpty) {
+      Navigator.pop(context);
+      return;
+    }
+
+    final ok = await _submitLearnedVocabIds(showDoneOnSuccess: false);
+    if (!mounted) return;
+
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Đã lưu ${_learnedVocabIds.length} từ đã học'),
+          backgroundColor: Colors.green.shade700,
+        ),
+      );
+      Navigator.pop(context);
     }
   }
 
@@ -169,34 +195,40 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
     final isLast = _currentIndex == _cards.length - 1;
     final h = MediaQuery.of(context).size.height;
 
-    return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _header(),
-            _progress(),
-            const Spacer(),
-            // Card with 40% height
-            SizedBox(
-              height: h * 0.48,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: FlipCard(
-                  key: _cardKeys[_currentIndex],
-                  direction: FlipDirection.HORIZONTAL,
-                  onFlip: () => _onFlip(
-                    _cardKeys[_currentIndex].currentState?.isFront ?? true,
+    return WillPopScope(
+      onWillPop: () async {
+        _confirmExit();
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: Colors.grey.shade100,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _header(),
+              _progress(),
+              const Spacer(),
+              // Card with 40% height
+              SizedBox(
+                height: h * 0.48,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: FlipCard(
+                    key: _cardKeys[_currentIndex],
+                    direction: FlipDirection.HORIZONTAL,
+                    onFlip: () => _onFlip(
+                      _cardKeys[_currentIndex].currentState?.isFront ?? true,
+                    ),
+                    front: _front(vocab),
+                    back: _back(vocab),
                   ),
-                  front: _front(vocab),
-                  back: _back(vocab),
                 ),
               ),
-            ),
-            const Spacer(),
-            _navButtons(isLast),
-            const SizedBox(height: 24),
-          ],
+              const Spacer(),
+              _navButtons(isLast),
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );
@@ -423,7 +455,12 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
     child: Row(
       children: [
         Expanded(
-          child: _navBtn('Trước', Icons.arrow_back, _currentIndex > 0, _prev),
+          child: _navBtn(
+            'Trước',
+            Icons.arrow_back,
+            _currentIndex > 0 && !_isCompleting,
+            _prev,
+          ),
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -431,7 +468,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
           child: _navBtn(
             isLast ? 'Hoàn thành' : 'Tiếp theo',
             isLast ? Icons.check : Icons.arrow_forward,
-            _canNavigateFromCurrent,
+            _canNavigateFromCurrent && !_isCompleting,
             () {
               if (!_canNavigateFromCurrent) return _showFlipFirstSnack();
               isLast ? _complete() : _next();
@@ -501,24 +538,40 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
     );
   }
 
-  void _confirmExit() => showDialog(
-    context: context,
-    builder: (_) => AlertDialog(
-      title: const Text('Thoát học?'),
-      content: const Text('Tiến độ sẽ không được lưu.'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Tiếp tục'),
+  void _confirmExit() {
+    if (_isCompleting) return;
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Dừng học?'),
+        content: Text(
+          _learnedVocabIds.isEmpty
+              ? 'Bạn chưa học từ nào. Bạn muốn thoát không?'
+              : 'Bạn đã học ${_learnedVocabIds.length} từ. Bạn muốn lưu tiến độ trước khi thoát không?',
         ),
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context);
-            Navigator.pop(context);
-          },
-          child: const Text('Thoát', style: TextStyle(color: Colors.red)),
-        ),
-      ],
-    ),
-  );
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Tiếp tục học'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            child: const Text('Thoát', style: TextStyle(color: Colors.red)),
+          ),
+          if (_learnedVocabIds.isNotEmpty)
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _saveProgressAndExit();
+              },
+              child: const Text('Lưu & thoát'),
+            ),
+        ],
+      ),
+    );
+  }
 }
