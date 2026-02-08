@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../../../assets/app_remote_images.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../data/services/auth_service.dart';
 import '../../../config/routes/route_names.dart';
@@ -146,8 +148,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildLogo() {
     return Center(
-      child: Image.asset(
-        'lib/assets/images/Logo.png',
+      child: Image.network(
+        AppRemoteImages.appIconPng,
         height: 36,
         fit: BoxFit.contain,
       ),
@@ -158,8 +160,8 @@ class _LoginScreenState extends State<LoginScreen> {
     return SizedBox(
       height: 360,
       child: Center(
-        child: Image.asset(
-          'lib/assets/images/login_img.png',
+        child: Image.network(
+          AppRemoteImages.loginHeroPng,
           height: 340,
           fit: BoxFit.contain,
         ),

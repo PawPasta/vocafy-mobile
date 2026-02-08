@@ -81,12 +81,6 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
-  assets:
-    - lib/assets/images/
-    - lib/assets/icons/
-    - lib/assets/translations/
-
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
@@ -117,11 +111,11 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "lib/assets/images/app_icon.png"
+  image_path: "https://res.cloudinary.com/dv6ibddcf/image/upload/v1769765008/zc55hvdwelu0cobfk3xv.png"
   
   # Cấu hình cho Android - Adaptive Icon với background trắng
   adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "lib/assets/images/app_icon.png"
+  adaptive_icon_foreground: "https://res.cloudinary.com/dv6ibddcf/image/upload/v1769765008/zc55hvdwelu0cobfk3xv.png"
   
   # Loại bỏ background có sẵn trong icon (nếu có)
   remove_alpha_channel: true
@@ -133,18 +127,18 @@ flutter_launcher_icons:
   # Cấu hình cho Web
   web:
     generate: true
-    image_path: "lib/assets/images/app_icon.png"
+    image_path: "https://res.cloudinary.com/dv6ibddcf/image/upload/v1769765008/zc55hvdwelu0cobfk3xv.png"
     background_color: "#FFFFFF"
   
   # Cấu hình cho Windows
   windows:
     generate: true
-    image_path: "lib/assets/images/app_icon.png"
+    image_path: "https://res.cloudinary.com/dv6ibddcf/image/upload/v1769765008/zc55hvdwelu0cobfk3xv.png"
     icon_size: 48
     background_color: "#FFFFFF"
   
   # Cấu hình cho macOS
   macos:
     generate: true
-    image_path: "lib/assets/images/app_icon.png"
+    image_path: "https://res.cloudinary.com/dv6ibddcf/image/upload/v1769765008/zc55hvdwelu0cobfk3xv.png"
     background_color: "#FFFFFF"

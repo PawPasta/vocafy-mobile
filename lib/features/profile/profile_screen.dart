@@ -4,6 +4,7 @@ import '../../core/api/user_service.dart';
 import '../../core/models/user_model.dart';
 import '../../config/routes/route_names.dart';
 import '../../data/services/auth_service.dart';
+import '../../assets/app_remote_images.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -313,8 +314,8 @@ class ProfileScreen extends StatelessWidget {
                                   user?.profile?.avatarUrl == null ||
                                       user!.profile!.avatarUrl!.isEmpty
                                   ? ClipOval(
-                                      child: SvgPicture.asset(
-                                        'lib/assets/icons/avatar_placeholder.svg',
+                                      child: SvgPicture.network(
+                                        AppRemoteImages.defaultAvatarSvg,
                                         width: 104,
                                         height: 104,
                                         fit: BoxFit.cover,

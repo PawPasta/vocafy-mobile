@@ -6,6 +6,7 @@ import '../../config/routes/route_names.dart';
 import '../../core/api/api_client.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../core/storage/token_storage.dart';
+import '../../assets/app_remote_images.dart';
 
 /// Splash screen displayed on app launch with animated logo
 class SplashScreen extends StatefulWidget {
@@ -17,6 +18,8 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
+  late final ImageProvider _logoProvider;
+
   late AnimationController _animationController;
   late AnimationController _shimmerController;
   late AnimationController _pulseController;
@@ -30,6 +33,9 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
+
+    // Keep a single provider so both logo layers share the same cached fetch.
+    _logoProvider = const NetworkImage(AppRemoteImages.splashLogoPng);
 
     _animationController = AnimationController(
       vsync: this,
@@ -300,11 +306,39 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Widget _buildVocafyLogo() {
-    return Image.asset(
-      'lib/assets/images/Logo.png',
+    return Image(
+      image: _logoProvider,
       width: 200,
       height: 80,
       fit: BoxFit.contain,
+      gaplessPlayback: true,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+
+        return const SizedBox(
+          width: 200,
+          height: 80,
+          child: Center(
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return const SizedBox(
+          width: 200,
+          height: 80,
+          child: Center(
+            child: Text(
+              'Vocafy',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+            ),
+          ),
+        );
+      },
     );
   }
 }
