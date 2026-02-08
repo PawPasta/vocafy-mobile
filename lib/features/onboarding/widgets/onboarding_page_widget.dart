@@ -31,26 +31,29 @@ class OnboardingPageWidget extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Spacer(flex: 2),
-            
+
             // Illustration image with hero animation
             Hero(
               tag: page.imagePath,
-              child: Image.asset(
+              child: Image.network(
                 page.imagePath,
                 height: 280,
                 fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const SizedBox(
+                  height: 280,
+                  child: Center(
+                    child: Icon(Icons.image_not_supported, size: 44),
+                  ),
+                ),
               ),
             ),
-            
+
             const SizedBox(height: 60),
-            
+
             // Title with gradient text effect
             ShaderMask(
               shaderCallback: (bounds) => const LinearGradient(
-                colors: [
-                  Color(0xFF5B7FFF),
-                  Color(0xFF4C6FFF),
-                ],
+                colors: [Color(0xFF5B7FFF), Color(0xFF4C6FFF)],
               ).createShader(bounds),
               child: Text(
                 page.title,
@@ -64,9 +67,9 @@ class OnboardingPageWidget extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             // Description text
             Text(
               page.description,
@@ -78,7 +81,7 @@ class OnboardingPageWidget extends StatelessWidget {
                 letterSpacing: 0.3,
               ),
             ),
-            
+
             const Spacer(flex: 3),
           ],
         ),

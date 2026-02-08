@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../assets/app_remote_images.dart';
 import '../../core/api/api_client.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../data/services/auth_service.dart';
@@ -34,11 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentCategoryPage = 0;
   int _selectedIndex = 0;
 
-  final List<String> _bannerImages = const [
-    'https://i.pinimg.com/736x/cf/17/a2/cf17a21a1ccb69e4df352159e4e27736.jpg',
-    'https://i.pinimg.com/736x/e0/0c/bd/e00cbd85d41eb2cc7b5ebd4e054fb518.jpg',
-    'https://i.pinimg.com/1200x/f5/5a/52/f55a5271cbe4ee9fff695ccc1c4a1c0b.jpg',
-  ];
+  final List<String> _bannerImages = AppRemoteImages.homeBannerImages;
 
   static const _primaryBlue = Color(0xFF4F6CFF);
   static const _primaryBlueDark = Color(0xFF3F5BFF);

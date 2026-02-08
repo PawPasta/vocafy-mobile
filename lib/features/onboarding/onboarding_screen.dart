@@ -3,6 +3,7 @@ import 'models/onboarding_model.dart';
 import 'widgets/onboarding_page_widget.dart';
 import '../../config/routes/route_names.dart';
 import '../../core/storage/token_storage.dart';
+import '../../assets/app_remote_images.dart';
 
 /// Onboarding screen with multiple pages and smooth animations
 class OnboardingScreen extends StatefulWidget {
@@ -140,8 +141,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           ),
 
           // Logo in center
-          Image.asset(
-            'lib/assets/images/Logo.png',
+          Image.network(
+            AppRemoteImages.appIconPng,
             height: 32,
             fit: BoxFit.contain,
           ),

@@ -1,3 +1,5 @@
+import '../../../assets/app_remote_images.dart';
+
 /// Model class representing a single onboarding page
 class OnboardingModel {
   final String title;
@@ -14,18 +16,21 @@ class OnboardingModel {
   static const List<OnboardingModel> pages = [
     OnboardingModel(
       title: 'Expand Your Professional\nVocabulary',
-      description: 'Learn industry-specific words and phrases that boost your communication and confidence in your chosen field',
-      imagePath: 'lib/assets/images/intro_img_1.png',
+      description:
+          'Learn industry-specific words and phrases that boost your communication and confidence in your chosen field',
+      imagePath: AppRemoteImages.onboarding1Png,
     ),
     OnboardingModel(
       title: 'Study on Your Own Time',
-      description: 'AI creates a learning plan that matches your free time and daily routine, so you can learn effectively without stress',
-      imagePath: 'lib/assets/images/intro_img_2.png',
+      description:
+          'AI creates a learning plan that matches your free time and daily routine, so you can learn effectively without stress',
+      imagePath: AppRemoteImages.onboarding2Png,
     ),
     OnboardingModel(
       title: 'Remember Longer\nwith Smart Review',
-      description: 'Revisit words at the perfect time with AI-powered spaced repetition, helping you retain knowledge effortlessly',
-      imagePath: 'lib/assets/images/intro_img_3.png',
+      description:
+          'Revisit words at the perfect time with AI-powered spaced repetition, helping you retain knowledge effortlessly',
+      imagePath: AppRemoteImages.onboarding3Png,
     ),
   ];
 }
