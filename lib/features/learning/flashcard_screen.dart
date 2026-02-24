@@ -4,6 +4,7 @@ import 'package:flip_card/flip_card.dart';
 import '../../data/models/learning_card.dart';
 import '../../data/services/learning_service.dart';
 import '../../config/routes/route_names.dart';
+import '../../core/tts/tts_utils.dart';
 
 class FlashcardScreen extends StatefulWidget {
   final LearningSet learningSet;
@@ -38,7 +39,6 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
     _cards = widget.learningSet.cards;
     _learnedVocabIds = [];
     _cardKeys = List.generate(_cards.length, (_) => GlobalKey<FlipCardState>());
-    _tts.setLanguage('ja-JP');
   }
 
   @override
@@ -47,16 +47,41 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
     super.dispose();
   }
 
-  /// Phát âm tiếng Nhật
-  Future<void> _speakJapanese(String text) async {
-    await _tts.setLanguage('ja-JP');
-    await _tts.speak(text);
+  Future<void> _speakTerm(LearningVocab vocab) async {
+    final term = _primaryTerm(vocab);
+    final locale = TtsUtils.resolveLocale(
+      languageCode: term?.languageCode,
+      scriptType: term?.scriptType,
+    );
+    final ready = await TtsUtils.prepareLanguage(
+      tts: _tts,
+      context: context,
+      locale: locale,
+    );
+    if (!ready) return;
+    await _tts.speak(vocab.mainTerm);
   }
 
-  /// Phát âm tiếng Anh
-  Future<void> _speakEnglish(String text) async {
-    await _tts.setLanguage('en-US');
-    await _tts.speak(text);
+  Future<void> _speakMeaning(LearningVocab vocab) async {
+    final langCode = vocab.meanings.isNotEmpty
+        ? vocab.meanings.first.languageCode
+        : 'en';
+    final locale = TtsUtils.resolveLocale(languageCode: langCode);
+    final ready = await TtsUtils.prepareLanguage(
+      tts: _tts,
+      context: context,
+      locale: locale,
+    );
+    if (!ready) return;
+    await _tts.speak(vocab.mainMeaning);
+  }
+
+  VocabTerm? _primaryTerm(LearningVocab vocab) {
+    if (vocab.terms.isEmpty) return null;
+    for (final term in vocab.terms) {
+      if (term.textValue == vocab.mainTerm) return term;
+    }
+    return vocab.terms.first;
   }
 
   void _onFlip(bool isFront) {
@@ -74,7 +99,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
   void _showFlipFirstSnack() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Hãy lật thẻ trước!'),
+        content: Text('Please flip the card first!'),
         duration: Duration(seconds: 1),
       ),
     );
@@ -118,7 +143,10 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Lỗi kết nối'), backgroundColor: Colors.red),
+      const SnackBar(
+        content: Text('Connection error'),
+        backgroundColor: Colors.red,
+      ),
     );
     return false;
   }
@@ -135,7 +163,9 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Đã lưu ${_learnedVocabIds.length} từ đã học'),
+          content: Text(
+            'Saved ${_learnedVocabIds.length} learned words',
+          ),
           backgroundColor: Colors.green.shade700,
         ),
       );
@@ -155,12 +185,12 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
             const Icon(Icons.celebration, size: 64, color: Colors.amber),
             const SizedBox(height: 16),
             const Text(
-              'Chúc mừng!',
+              'Congratulations!',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              'Bạn đã học xong ${_learnedVocabIds.length} từ!',
+              'You have finished ${_learnedVocabIds.length} words!',
               style: TextStyle(color: Colors.grey.shade600),
             ),
           ],
@@ -174,7 +204,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
                 context,
               ).pushNamedAndRemoveUntil(RouteNames.home, (route) => false);
             },
-            child: const Text('Về trang chủ'),
+            child: const Text('Go to home'),
           ),
         ],
       ),
@@ -186,7 +216,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
     if (_cards.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('Flashcard')),
-        body: const Center(child: Text('Không có từ vựng')),
+        body: const Center(child: Text('No vocabulary available')),
       );
     }
 
@@ -319,7 +349,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
         ],
         const SizedBox(height: 20),
         GestureDetector(
-          onTap: () => _speakJapanese(v.mainTerm),
+          onTap: () => _speakTerm(v),
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -331,7 +361,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
         ),
         const Spacer(),
         Text(
-          'Chạm để lật',
+          'Tap to flip',
           style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
         ),
         const SizedBox(height: 12),
@@ -365,9 +395,8 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
-        // Text-to-speech cho nghĩa tiếng Anh
         GestureDetector(
-          onTap: () => _speakEnglish(v.mainMeaning),
+          onTap: () => _speakMeaning(v),
           child: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
@@ -401,7 +430,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
         ],
         const Spacer(),
         Text(
-          'Chạm để lật lại',
+          'Tap to flip back',
           style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
         ),
         const SizedBox(height: 12),
@@ -456,7 +485,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
       children: [
         Expanded(
           child: _navBtn(
-            'Trước',
+            'Previous',
             Icons.arrow_back,
             _currentIndex > 0 && !_isCompleting,
             _prev,
@@ -466,7 +495,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
         Expanded(
           flex: 2,
           child: _navBtn(
-            isLast ? 'Hoàn thành' : 'Tiếp theo',
+            isLast ? 'Finish' : 'Next',
             isLast ? Icons.check : Icons.arrow_forward,
             _canNavigateFromCurrent && !_isCompleting,
             () {
@@ -544,23 +573,23 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Dừng học?'),
+        title: const Text('Stop learning?'),
         content: Text(
           _learnedVocabIds.isEmpty
-              ? 'Bạn chưa học từ nào. Bạn muốn thoát không?'
-              : 'Bạn đã học ${_learnedVocabIds.length} từ. Bạn muốn lưu tiến độ trước khi thoát không?',
+              ? 'You have not learned any words yet. Exit now?'
+              : 'You learned ${_learnedVocabIds.length} words. Save progress before exiting?',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Tiếp tục học'),
+            child: const Text('Continue'),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               Navigator.pop(context);
             },
-            child: const Text('Thoát', style: TextStyle(color: Colors.red)),
+            child: const Text('Exit', style: TextStyle(color: Colors.red)),
           ),
           if (_learnedVocabIds.isNotEmpty)
             FilledButton(
@@ -568,7 +597,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
                 Navigator.pop(context);
                 _saveProgressAndExit();
               },
-              child: const Text('Lưu & thoát'),
+              child: const Text('Save & exit'),
             ),
         ],
       ),

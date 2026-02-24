@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import '../../data/models/quiz_question.dart';
 import '../../data/services/quiz_service.dart';
+import '../../core/tts/tts_utils.dart';
 import 'pronunciation_challenge_dialog.dart';
 
 class QuizScreen extends StatefulWidget {
@@ -78,7 +79,6 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
       parent: _streakController,
       curve: Curves.elasticOut,
     );
-    _tts.setLanguage('ja-JP');
     _loadQuestions();
   }
 
@@ -110,7 +110,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
       if (questions.isEmpty) {
         setState(() {
           _isLoading = false;
-          _error = 'Chưa có câu hỏi nào. Hãy học thêm từ vựng trước!';
+          _error = 'No questions yet. Learn more vocabulary first!';
         });
       } else {
         // Calculate stage end indices
@@ -126,7 +126,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _error = 'Không thể tải câu hỏi. Vui lòng thử lại.';
+        _error = 'Unable to load questions. Please try again.';
       });
     }
   }
@@ -221,7 +221,12 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _speakText(String text) async {
-    await _tts.setLanguage('ja-JP');
+    final ready = await TtsUtils.prepareLanguage(
+      tts: _tts,
+      context: context,
+      locale: TtsUtils.jaJP,
+    );
+    if (!ready) return;
     await _tts.speak(text);
   }
 
@@ -250,7 +255,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     final typed = _normalizeAnswer(_answerController.text);
     if (typed.isEmpty) {
       setState(() {
-        _inputError = 'Vui lòng nhập câu trả lời';
+        _inputError = 'Please enter an answer.';
       });
       return;
     }
@@ -265,8 +270,8 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
       setState(() {
         _inputMismatchAttempts = nextAttempts;
         _inputError = nextAttempts >= 2
-            ? 'Sai 2 lần rồi. Tự động bỏ qua câu này.'
-            : 'Không khớp đáp án nào. Hãy kiểm tra chính tả. ($nextAttempts/2)';
+            ? 'Incorrect twice. Skipping this question.'
+            : 'No matching answer. Check spelling. ($nextAttempts/2)';
       });
       if (nextAttempts >= 2) {
         _skipCurrentQuestion();
@@ -337,7 +342,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
         _isSubmitting = false;
         _selectedOptionIndex = null;
         _inputError = question.questionType == 'LOOK_TERM_SELECT_MEANING'
-            ? 'Mạng chậm hoặc lỗi hệ thống. Thử lại nhé.'
+            ? 'Slow network or system error. Please try again.'
             : null;
       });
       return;
@@ -534,7 +539,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                       ),
                     ),
                     const Text(
-                      'Giai đoạn',
+                      'Stage',
                       style: TextStyle(fontSize: 12, color: Colors.white70),
                     ),
                   ],
@@ -542,7 +547,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
               ),
               const SizedBox(height: 24),
               Text(
-                'Hoàn thành Giai đoạn $_currentStage! 🎉',
+                'Stage $_currentStage complete! 🎉',
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -551,7 +556,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
               ),
               const SizedBox(height: 12),
               Text(
-                'Bạn đã trả lời đúng $_stageCorrectAnswers/$stageQuestions câu hỏi',
+                'You answered $_stageCorrectAnswers/$stageQuestions questions correctly.',
                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
               const SizedBox(height: 8),
@@ -584,7 +589,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                         ),
                       ),
                       child: const Text(
-                        'Dừng lại',
+                        'Stop',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -612,7 +617,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'Tiếp tục Giai đoạn ${_currentStage + 1}',
+                            'Continue to Stage ${_currentStage + 1}',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -650,7 +655,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
       child: Column(
         children: [
           Text(
-            'Tiến độ kiểm tra',
+            'Quiz progress',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -790,12 +795,12 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
             ),
             const SizedBox(height: 24),
             Text(
-              isPassed ? 'Xuất sắc! 🎉' : 'Cố gắng thêm nhé!',
+              isPassed ? 'Excellent! 🎉' : 'Keep it up!',
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             Text(
-              'Bạn đã trả lời đúng $_correctAnswers/${_questions.length} câu hỏi',
+              'You answered $_correctAnswers/${_questions.length} questions correctly.',
               style: TextStyle(fontSize: 16, color: Colors.grey[600]),
             ),
             const SizedBox(height: 8),
@@ -821,14 +826,14 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                   _buildStreakSummaryItem(
                     icon: Icons.local_fire_department,
                     value: _maxCorrectStreak,
-                    label: 'Chuỗi đúng cao nhất',
+                    label: 'Best correct streak',
                     color: _correctGreen,
                   ),
                   Container(width: 1, height: 40, color: Colors.grey[300]),
                   _buildStreakSummaryItem(
                     icon: Icons.heart_broken,
                     value: _maxWrongStreak,
-                    label: 'Chuỗi sai cao nhất',
+                    label: 'Longest wrong streak',
                     color: _wrongRed,
                   ),
                 ],
@@ -851,7 +856,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                       ),
                     ),
                     child: const Text(
-                      'Thoát',
+                      'Exit',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -888,7 +893,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                       ),
                     ),
                     child: const Text(
-                      'Làm lại',
+                      'Retry',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -954,7 +959,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
           CircularProgressIndicator(color: _primaryBlue),
           SizedBox(height: 16),
           Text(
-            'Đang tải câu hỏi...',
+            'Loading questions...',
             style: TextStyle(fontSize: 16, color: Colors.grey),
           ),
         ],
@@ -990,7 +995,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                 ),
               ),
               child: const Text(
-                'Quay lại',
+                'Go back',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -1046,7 +1051,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Text(
-          'Nhập đáp án:',
+          'Type your answer:',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -1061,7 +1066,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _submitTypedAnswer(),
           decoration: InputDecoration(
-            hintText: 'Nhập nghĩa (không phân biệt hoa/thường)',
+            hintText: 'Enter the meaning (case-insensitive)',
             errorText: _inputError,
             filled: true,
             fillColor: _optionBg,
@@ -1098,7 +1103,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                     ),
                   )
                 : const Text(
-                    'Gửi',
+                    'Submit',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -1110,7 +1115,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
         if (_hasAnswered && _lastResult != null) ...[
           const SizedBox(height: 12),
           Text(
-            _lastResult!.isCorrect ? 'Đúng rồi!' : 'Chưa đúng!',
+            _lastResult!.isCorrect ? 'Correct!' : 'Not quite!',
             style: TextStyle(
               color: _lastResult!.isCorrect ? _correctGreen : _wrongRed,
               fontWeight: FontWeight.w600,
@@ -1164,7 +1169,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isCorrect ? 'Chính xác! 🎯' : 'Sai rồi! 😅',
+                    isCorrect ? 'Correct! 🎯' : 'Incorrect! 😅',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -1173,7 +1178,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    isCorrect ? 'Chuỗi đúng: $streak' : 'Chuỗi sai: $streak',
+                    isCorrect ? 'Correct streak: $streak' : 'Wrong streak: $streak',
                     style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                   ),
                 ],
@@ -1252,7 +1257,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                 child: Column(
                   children: [
                     Text(
-                      widget.syllabusTitle ?? 'Kiểm tra',
+                      widget.syllabusTitle ?? 'Quiz',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -1271,7 +1276,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        'Giai đoạn $_currentStage/${_stageEndIndices.length}',
+                        'Stage $_currentStage/${_stageEndIndices.length}',
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -1470,7 +1475,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                           ),
                           SizedBox(height: 8),
                           Text(
-                            'Không thể tải hình',
+                            'Unable to load image',
                             style: TextStyle(color: Colors.white70),
                           ),
                         ],
@@ -1543,7 +1548,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Text(
-          'Chọn đáp án đúng:',
+          'Choose the correct answer:',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -1686,21 +1691,21 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   String _getQuestionTypeLabel(String type) {
     switch (type) {
       case 'LOOK_TERM_SELECT_MEANING':
-        return 'Nhìn từ → Chọn nghĩa';
+        return 'See term → Choose meaning';
       case 'LOOK_MEANING_SELECT_TERM':
-        return 'Nhìn nghĩa → Chọn từ';
+        return 'See meaning → Choose term';
       case 'LOOK_MEANING_INPUT_TERM':
-        return 'Nhìn nghĩa → Chọn từ';
+        return 'See meaning → Choose term';
       case 'LOOK_IMAGE_SELECT_TERM':
-        return 'Nhìn hình → Chọn từ';
+        return 'See image → Choose term';
       case 'LOOK_IMAGE_SELECT_MEANING':
-        return 'Nhìn hình → Chọn nghĩa';
+        return 'See image → Choose meaning';
       case 'LISTEN_SELECT_TERM':
-        return 'Nghe → Chọn từ';
+        return 'Listen → Choose term';
       case 'LISTEN_SELECT_MEANING':
-        return 'Nghe → Chọn nghĩa';
+        return 'Listen → Choose meaning';
       default:
-        return 'Trắc nghiệm';
+        return 'Quiz';
     }
   }
 
@@ -1709,24 +1714,25 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Thoát kiểm tra?'),
+        title: const Text('Exit quiz?'),
         content: const Text(
-          'Tiến trình làm bài sẽ không được lưu. Bạn có chắc muốn thoát?',
+          'Your progress will not be saved. Are you sure you want to exit?',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Tiếp tục'),
+            child: const Text('Continue'),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               Navigator.pop(context);
             },
-            child: const Text('Thoát', style: TextStyle(color: _wrongRed)),
+            child: const Text('Exit', style: TextStyle(color: _wrongRed)),
           ),
         ],
       ),
     );
   }
 }
+

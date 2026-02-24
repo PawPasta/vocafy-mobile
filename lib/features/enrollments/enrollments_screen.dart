@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../data/services/enrollment_service.dart';
 import '../../data/models/enrollment.dart';
 import '../../config/routes/route_names.dart';
@@ -359,7 +359,7 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
                             Icon(Icons.star, color: Colors.white, size: 14),
                             SizedBox(width: 4),
                             Text(
-                              'Tập trung',
+                              'Focused',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
@@ -399,7 +399,7 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '${enrollment.totalDays} ngày',
+                          '${enrollment.totalDays} days',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade600,
@@ -559,3 +559,4 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
     );
   }
 }
+

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../data/services/syllabus_service.dart';
 import '../../data/services/enrollment_service.dart';
 import '../../data/services/learning_service.dart';
@@ -75,7 +75,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Đăng ký khóa học thành công!'),
+            content: Text('Enrollment successful!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -86,7 +86,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Không thể đăng ký khóa học. Vui lòng thử lại.'),
+            content: Text('Unable to enroll. Please try again.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -421,7 +421,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
           MaterialPageRoute(
             builder: (_) => FlashcardScreen(
               learningSet: learningSet,
-              courseTitle: 'Học từ vựng',
+              courseTitle: 'Vocabulary Study',
               syllabusId: widget.syllabusId,
             ),
           ),
@@ -429,7 +429,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Không có từ vựng để học hoặc lỗi kết nối.'),
+            content: Text('No vocabulary to learn or a connection error.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -489,7 +489,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
                               ),
                               SizedBox(width: 8),
                               Text(
-                                'Học',
+                                'Study',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w700,
@@ -516,7 +516,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
                         MaterialPageRoute(
                           builder: (_) => QuizScreen(
                             syllabusId: widget.syllabusId,
-                            syllabusTitle: 'Kiểm tra từ vựng',
+                            syllabusTitle: 'Vocabulary Quiz',
                           ),
                         ),
                       );
@@ -554,7 +554,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
                           ),
                           SizedBox(width: 8),
                           Text(
-                            'Kiểm tra',
+                            'Quiz',
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
@@ -630,3 +630,4 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
     );
   }
 }
+

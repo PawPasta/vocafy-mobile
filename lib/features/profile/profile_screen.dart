@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/api/user_service.dart';
 import '../../core/models/user_model.dart';
@@ -62,18 +62,18 @@ class ProfileScreen extends StatelessWidget {
                           final ok = await showDialog<bool>(
                             context: context,
                             builder: (ctx) => AlertDialog(
-                              title: const Text('Đăng xuất'),
+                              title: const Text('Sign out'),
                               content: const Text(
-                                'Bạn có chắc muốn đăng xuất không?',
+                                'Are you sure you want to sign out?',
                               ),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.of(ctx).pop(false),
-                                  child: const Text('Hủy'),
+                                  child: const Text('Cancel'),
                                 ),
                                 TextButton(
                                   onPressed: () => Navigator.of(ctx).pop(true),
-                                  child: const Text('Đăng xuất'),
+                                  child: const Text('Sign out'),
                                 ),
                               ],
                             ),
@@ -455,3 +455,4 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 }
+

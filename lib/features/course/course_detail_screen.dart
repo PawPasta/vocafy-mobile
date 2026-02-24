@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../data/services/course_service.dart';
 import '../../data/services/vocabulary_service.dart';
 import '../../data/services/learning_service.dart';
@@ -72,7 +72,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Không có từ vựng để học hoặc lỗi kết nối.'),
+            content: Text('No vocabulary to learn or a connection error.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -102,11 +102,11 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       color: Colors.red,
                     ),
                     const SizedBox(height: 16),
-                    const Text('Không thể tải khóa học'),
+                    const Text('Unable to load course'),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Quay lại'),
+                      child: const Text('Go back'),
                     ),
                   ],
                 ),
@@ -194,7 +194,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '${vocabularies.length} từ vựng',
+                        '${vocabularies.length} words',
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
@@ -206,7 +206,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 // Vocabulary list
                 Expanded(
                   child: vocabularies.isEmpty
-                      ? const Center(child: Text('Chưa có từ vựng nào'))
+                      ? const Center(child: Text('No vocabulary yet'))
                       : ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           itemCount: vocabularies.length,
@@ -413,3 +413,4 @@ class _CourseData {
 
   _CourseData({this.course, required this.vocabularies});
 }
+
