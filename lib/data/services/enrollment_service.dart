@@ -12,12 +12,25 @@ class EnrollmentService {
 
   EnrollmentService._();
 
+  static const List<String> supportedTargetLanguages = <String>[
+    'EN',
+    'VI',
+    'JA',
+  ];
+
   /// Enroll in a syllabus
-  /// POST /api/enrollments with { "syllabus_id": syllabusId }
-  Future<bool> enrollSyllabus(int syllabusId) async {
+  /// POST /api/enrollments with
+  /// { "syllabus_id": syllabusId, "preferred_target_language": "EN|VI|JA" }
+  Future<bool> enrollSyllabus(
+    int syllabusId, {
+    String preferredTargetLanguage = 'EN',
+  }) async {
     try {
       final response = await api.post(Api.enrollments, {
         'syllabus_id': syllabusId,
+        'preferred_target_language': _normalizeTargetLanguage(
+          preferredTargetLanguage,
+        ),
       });
 
       final data = response.data;
@@ -29,6 +42,31 @@ class EnrollmentService {
     } catch (e) {
       if (kDebugMode) {
         print('❌ enrollSyllabus error: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Update preferred target language for an enrolled syllabus
+  /// PATCH /api/enrollments/preferred-target-language with
+  /// { "syllabus_id": syllabusId, "preferred_target_language": "EN|VI|JA" }
+  Future<bool> updatePreferredTargetLanguage({
+    required int syllabusId,
+    required String preferredTargetLanguage,
+  }) async {
+    try {
+      final response = await api.patch(Api.enrollmentsPreferredTargetLanguage, {
+        'syllabus_id': syllabusId,
+        'preferred_target_language': _normalizeTargetLanguage(
+          preferredTargetLanguage,
+        ),
+      });
+
+      return (response.statusCode ?? 0) >= 200 &&
+          (response.statusCode ?? 0) < 300;
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ updatePreferredTargetLanguage error: $e');
       }
       return false;
     }
@@ -96,6 +134,14 @@ class EnrollmentService {
       }
       return null;
     }
+  }
+
+  String _normalizeTargetLanguage(String languageCode) {
+    final normalized = languageCode.trim().toUpperCase();
+    if (supportedTargetLanguages.contains(normalized)) {
+      return normalized;
+    }
+    return 'EN';
   }
 }
 

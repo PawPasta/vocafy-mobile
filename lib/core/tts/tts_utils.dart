@@ -17,6 +17,8 @@ class TtsUtils {
     final sample = (text ?? '').trim();
 
     if (_containsKana(sample)) return jaJP;
+    if (_containsVietnameseDiacritics(sample)) return viVN;
+    if (_containsCjk(sample)) return zhCN;
 
     final isJapanese =
         lang.contains('ja') ||
@@ -53,6 +55,8 @@ class TtsUtils {
     required BuildContext context,
     required String locale,
   }) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+
     bool available = false;
     try {
       available = await tts.isLanguageAvailable(locale);
@@ -61,23 +65,21 @@ class TtsUtils {
     }
 
     if (!available) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'The ${displayName(locale)} voice is not installed. '
-              'Please install it in system Text-to-Speech settings.',
-            ),
-            duration: const Duration(seconds: 4),
-            action: SnackBarAction(label: 'OK', onPressed: () {}),
+      messenger?.showSnackBar(
+        SnackBar(
+          content: Text(
+            'The ${displayName(locale)} voice is not installed. '
+            'Please install it in system Text-to-Speech settings.',
           ),
-        );
-      }
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(label: 'OK', onPressed: () {}),
+        ),
+      );
       return false;
     }
 
     await tts.setLanguage(locale);
-    final voiceSelected = await _setPreferredVoice(tts, locale, context);
+    final voiceSelected = await _setPreferredVoice(tts, locale, messenger);
     if (_normalizeLocale(locale) == _normalizeLocale(jaJP) &&
         voiceSelected == false) {
       return false;
@@ -88,7 +90,7 @@ class TtsUtils {
   static Future<bool> _setPreferredVoice(
     FlutterTts tts,
     String locale,
-    BuildContext context,
+    ScaffoldMessengerState? messenger,
   ) async {
     try {
       final voices = await tts.getVoices;
@@ -120,16 +122,14 @@ class TtsUtils {
       }
 
       if (_normalizeLocale(locale) == _normalizeLocale(jaJP)) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Japanese voice not found. Please install a Japanese TTS voice.',
-              ),
-              duration: Duration(seconds: 4),
+        messenger?.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Japanese voice not found. Please install a Japanese TTS voice.',
             ),
-          );
-        }
+            duration: Duration(seconds: 4),
+          ),
+        );
         return false;
       }
     } catch (_) {
@@ -143,4 +143,11 @@ class TtsUtils {
 
   static bool _containsKana(String text) =>
       RegExp(r'[\u3040-\u30FF]').hasMatch(text);
+
+  static bool _containsVietnameseDiacritics(String text) => RegExp(
+    r'[ăâđêôơưĂÂĐÊÔƠƯáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ]',
+  ).hasMatch(text);
+
+  static bool _containsCjk(String text) =>
+      RegExp(r'[\u4E00-\u9FFF]').hasMatch(text);
 }

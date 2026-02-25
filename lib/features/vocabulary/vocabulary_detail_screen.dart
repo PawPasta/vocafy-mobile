@@ -7,8 +7,7 @@ import '../../core/tts/tts_utils.dart';
 class VocabularyDetailScreen extends StatefulWidget {
   final int vocabularyId;
 
-  const VocabularyDetailScreen({Key? key, required this.vocabularyId})
-    : super(key: key);
+  const VocabularyDetailScreen({super.key, required this.vocabularyId});
 
   @override
   State<VocabularyDetailScreen> createState() => _VocabularyDetailScreenState();
@@ -63,10 +62,10 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
   }
 
   Future<void> _speak(
-    String text,
-    String languageCode,
-    String scriptType,
-  ) async {
+    String text, {
+    String? languageCode,
+    String? scriptType,
+  }) async {
     if (_isSpeaking && _currentSpeakingText == text) {
       await _flutterTts.stop();
       return;
@@ -75,6 +74,7 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
     final ttsLanguage = TtsUtils.resolveLocale(
       languageCode: languageCode,
       scriptType: scriptType,
+      text: text,
     );
     final ready = await TtsUtils.prepareLanguage(
       tts: _flutterTts,
@@ -217,13 +217,17 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
                           height: 200,
                           width: double.infinity,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            height: 200,
-                            color: Colors.grey.shade200,
-                            child: const Center(
-                              child: Icon(Icons.image_not_supported, size: 48),
-                            ),
-                          ),
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                height: 200,
+                                color: Colors.grey.shade200,
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    size: 48,
+                                  ),
+                                ),
+                              ),
                         ),
                       ),
                     ),
@@ -255,8 +259,8 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
                               return GestureDetector(
                                 onTap: () => _speak(
                                   term.textValue,
-                                  term.languageCode,
-                                  term.scriptType,
+                                  languageCode: term.languageCode,
+                                  scriptType: term.scriptType,
                                 ),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
@@ -442,6 +446,12 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
                                                   fontWeight: FontWeight.w500,
                                                 ),
                                               ),
+                                              const Spacer(),
+                                              _buildSpeakButton(
+                                                text: meaning.exampleSentence!,
+                                                languageCode:
+                                                    meaning.languageCode,
+                                              ),
                                             ],
                                           ),
                                           const SizedBox(height: 8),
@@ -458,12 +468,24 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
                                                   .exampleTranslation!
                                                   .isNotEmpty) ...[
                                             const SizedBox(height: 6),
-                                            Text(
-                                              meaning.exampleTranslation!,
-                                              style: TextStyle(
-                                                fontSize: 13,
-                                                color: Colors.grey.shade600,
-                                              ),
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    meaning.exampleTranslation!,
+                                                    style: TextStyle(
+                                                      fontSize: 13,
+                                                      color:
+                                                          Colors.grey.shade600,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                _buildSpeakButton(
+                                                  text: meaning
+                                                      .exampleTranslation!,
+                                                ),
+                                              ],
                                             ),
                                           ],
                                         ],
@@ -628,5 +650,27 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
       default:
         return pos;
     }
+  }
+
+  Widget _buildSpeakButton({required String text, String? languageCode}) {
+    final isCurrent = _isSpeaking && _currentSpeakingText == text;
+    return GestureDetector(
+      onTap: () => _speak(text, languageCode: languageCode),
+      child: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          color: isCurrent
+              ? _primaryBlue.withValues(alpha: 0.18)
+              : Colors.grey.shade100,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          isCurrent ? Icons.stop_circle_outlined : Icons.volume_up_outlined,
+          size: 17,
+          color: isCurrent ? _primaryBlue : Colors.grey.shade700,
+        ),
+      ),
+    );
   }
 }

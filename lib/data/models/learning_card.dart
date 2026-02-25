@@ -147,7 +147,9 @@ class VocabMeaning {
       languageCode: _asString(json['language_code']),
       meaningText: _asString(json['meaning_text']),
       exampleSentence: json['example_sentence']?.toString(),
-      exampleTranslation: json['example_translation']?.toString(),
+      exampleTranslation:
+          json['example_translation']?.toString() ??
+          json['example_transalation']?.toString(),
       partOfSpeech: _asString(json['part_of_speech']),
     );
   }

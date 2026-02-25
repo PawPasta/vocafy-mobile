@@ -12,11 +12,11 @@ class FlashcardScreen extends StatefulWidget {
   final int? syllabusId;
 
   const FlashcardScreen({
-    Key? key,
     required this.learningSet,
     required this.courseTitle,
     this.syllabusId,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   State<FlashcardScreen> createState() => _FlashcardScreenState();
@@ -47,11 +47,16 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
     super.dispose();
   }
 
-  Future<void> _speakTerm(LearningVocab vocab) async {
-    final term = _primaryTerm(vocab);
+  Future<void> _speakText(
+    String text, {
+    String? languageCode,
+    String? scriptType,
+  }) async {
+    if (text.trim().isEmpty) return;
     final locale = TtsUtils.resolveLocale(
-      languageCode: term?.languageCode,
-      scriptType: term?.scriptType,
+      languageCode: languageCode,
+      scriptType: scriptType,
+      text: text,
     );
     final ready = await TtsUtils.prepareLanguage(
       tts: _tts,
@@ -59,21 +64,23 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
       locale: locale,
     );
     if (!ready) return;
-    await _tts.speak(vocab.mainTerm);
+    await _tts.speak(text);
+  }
+
+  Future<void> _speakTerm(LearningVocab vocab) async {
+    final term = _primaryTerm(vocab);
+    await _speakText(
+      vocab.mainTerm,
+      languageCode: term?.languageCode,
+      scriptType: term?.scriptType,
+    );
   }
 
   Future<void> _speakMeaning(LearningVocab vocab) async {
     final langCode = vocab.meanings.isNotEmpty
         ? vocab.meanings.first.languageCode
         : 'en';
-    final locale = TtsUtils.resolveLocale(languageCode: langCode);
-    final ready = await TtsUtils.prepareLanguage(
-      tts: _tts,
-      context: context,
-      locale: locale,
-    );
-    if (!ready) return;
-    await _tts.speak(vocab.mainMeaning);
+    await _speakText(vocab.mainMeaning, languageCode: langCode);
   }
 
   VocabTerm? _primaryTerm(LearningVocab vocab) {
@@ -82,6 +89,11 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
       if (term.textValue == vocab.mainTerm) return term;
     }
     return vocab.terms.first;
+  }
+
+  VocabMeaning? _primaryMeaning(LearningVocab vocab) {
+    if (vocab.meanings.isEmpty) return null;
+    return vocab.meanings.first;
   }
 
   void _onFlip(bool isFront) {
@@ -163,9 +175,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Saved ${_learnedVocabIds.length} learned words',
-          ),
+          content: Text('Saved ${_learnedVocabIds.length} learned words'),
           backgroundColor: Colors.green.shade700,
         ),
       );
@@ -370,73 +380,166 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
   );
 
   Widget _back(LearningVocab v) => _cardBox(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (v.imageUrl != null && v.imageUrl!.isNotEmpty)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              v.imageUrl!,
-              height: 80,
-              width: 80,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Icon(
-                Icons.image_outlined,
-                size: 40,
-                color: Colors.grey.shade400,
+    child: Builder(
+      builder: (context) {
+        final meaning = _primaryMeaning(v);
+        final exampleSentence = meaning?.exampleSentence?.trim() ?? '';
+        final exampleTranslation = meaning?.exampleTranslation?.trim() ?? '';
+
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              if (v.imageUrl != null && v.imageUrl!.isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    v.imageUrl!,
+                    height: 80,
+                    width: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Icon(
+                      Icons.image_outlined,
+                      size: 40,
+                      color: Colors.grey.shade400,
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      v.mainMeaning,
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _speakButton(
+                    onTap: () => _speakMeaning(v),
+                    color: Colors.green,
+                  ),
+                ],
               ),
-            ),
-          ),
-        const SizedBox(height: 16),
-        Text(
-          v.mainMeaning,
-          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 16),
-        GestureDetector(
-          onTap: () => _speakMeaning(v),
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.green.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.volume_up,
-              color: Colors.green.shade700,
-              size: 24,
-            ),
-          ),
-        ),
-        if (v.meanings.isNotEmpty &&
-            v.meanings.first.partOfSpeech.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.green.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              v.meanings.first.partOfSpeech,
-              style: TextStyle(
-                color: Colors.green.shade700,
-                fontWeight: FontWeight.w500,
+              if (exampleSentence.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                _exampleBox(
+                  label: 'Example sentence',
+                  text: exampleSentence,
+                  onSpeak: () => _speakText(
+                    exampleSentence,
+                    languageCode: meaning?.languageCode,
+                  ),
+                ),
+              ],
+              if (exampleTranslation.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                _exampleBox(
+                  label: 'Example translation',
+                  text: exampleTranslation,
+                  onSpeak: () => _speakText(exampleTranslation),
+                ),
+              ],
+              if (meaning != null && meaning.partOfSpeech.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    meaning.partOfSpeech,
+                    style: TextStyle(
+                      color: Colors.green.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 14),
+              Text(
+                'Tap to flip back',
+                style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
               ),
+              const SizedBox(height: 4),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+
+  Widget _speakButton({
+    required VoidCallback onTap,
+    required Color color,
+    double iconSize = 20,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(Icons.volume_up, color: color, size: iconSize),
+      ),
+    );
+  }
+
+  Widget _exampleBox({
+    required String label,
+    required String text,
+    required VoidCallback onSpeak,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F7FF),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE4E9FF)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.grey.shade700,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              _speakButton(onTap: onSpeak, color: _blue, iconSize: 18),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade900,
+              fontStyle: label == 'Example sentence'
+                  ? FontStyle.italic
+                  : FontStyle.normal,
             ),
           ),
         ],
-        const Spacer(),
-        Text(
-          'Tap to flip back',
-          style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
-        ),
-        const SizedBox(height: 12),
-      ],
-    ),
-  );
+      ),
+    );
+  }
 
   Widget _cardBox({required Widget child}) => Container(
     width: double.infinity,

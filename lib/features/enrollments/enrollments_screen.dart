@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../data/services/enrollment_service.dart';
 import '../../data/models/enrollment.dart';
 import '../../config/routes/route_names.dart';
@@ -14,6 +14,7 @@ class EnrollmentsScreen extends StatefulWidget {
 class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
   List<Enrollment> _enrollments = [];
   bool _loadingEnrollments = false;
+  final Set<int> _updatingLanguageSyllabusIds = <int>{};
 
   final ScrollController _scrollController = ScrollController();
   int _page = 0;
@@ -90,6 +91,108 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
     if (position.pixels >= position.maxScrollExtent - 400) {
       _loadNextPage();
     }
+  }
+
+  Future<void> _changePreferredTargetLanguage(Enrollment enrollment) async {
+    final initialLanguage =
+        EnrollmentService.supportedTargetLanguages.contains(
+          enrollment.preferredTargetLanguage,
+        )
+        ? enrollment.preferredTargetLanguage
+        : 'EN';
+
+    String selectedLanguage = initialLanguage;
+    final chosenLanguage = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Change Learning Language'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: EnrollmentService.supportedTargetLanguages.map((
+                  lang,
+                ) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: ChoiceChip(
+                      label: Text(_targetLanguageLabel(lang)),
+                      selected: selectedLanguage == lang,
+                      onSelected: (_) =>
+                          setDialogState(() => selectedLanguage = lang),
+                    ),
+                  );
+                }).toList(),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () =>
+                      Navigator.of(dialogContext).pop(selectedLanguage),
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (chosenLanguage == null ||
+        chosenLanguage == enrollment.preferredTargetLanguage) {
+      return;
+    }
+
+    setState(() {
+      _updatingLanguageSyllabusIds.add(enrollment.syllabusId);
+    });
+
+    final success = await enrollmentService.updatePreferredTargetLanguage(
+      syllabusId: enrollment.syllabusId,
+      preferredTargetLanguage: chosenLanguage,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _updatingLanguageSyllabusIds.remove(enrollment.syllabusId);
+      if (success) {
+        _enrollments = _enrollments.map((item) {
+          if (item.syllabusId != enrollment.syllabusId) return item;
+          return Enrollment(
+            id: item.id,
+            syllabusId: item.syllabusId,
+            syllabusTitle: item.syllabusTitle,
+            syllabusDescription: item.syllabusDescription,
+            imageBackground: item.imageBackground,
+            imageIcon: item.imageIcon,
+            totalDays: item.totalDays,
+            languageSet: item.languageSet,
+            preferredTargetLanguage: chosenLanguage,
+            categoryName: item.categoryName,
+            status: item.status,
+            progress: item.progress,
+            isFocused: item.isFocused,
+            enrolledAt: item.enrolledAt,
+          );
+        }).toList();
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success
+              ? 'Learning language updated to ${_targetLanguageLabel(chosenLanguage)}.'
+              : 'Unable to update learning language. Please try again.',
+        ),
+        backgroundColor: success ? Colors.green : Colors.red,
+      ),
+    );
   }
 
   @override
@@ -270,6 +373,9 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
 
   Widget _buildEnrollmentCarouselCard(Enrollment enrollment) {
     final isFocused = enrollment.isFocused;
+    final isUpdatingLanguage = _updatingLanguageSyllabusIds.contains(
+      enrollment.syllabusId,
+    );
     final hasImage =
         enrollment.imageBackground.isNotEmpty ||
         enrollment.imageIcon.isNotEmpty;
@@ -312,7 +418,7 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
                             imageUrl,
                             width: double.infinity,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
+                            errorBuilder: (context, error, stackTrace) =>
                                 _buildPlaceholderImage(),
                           )
                         : _buildPlaceholderImage(),
@@ -370,6 +476,62 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
                         ),
                       ),
                     ),
+                  Positioned(
+                    bottom: 10,
+                    left: 10,
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.45),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            'Target: ${enrollment.preferredTargetLanguage}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        GestureDetector(
+                          onTap: isUpdatingLanguage
+                              ? null
+                              : () =>
+                                    _changePreferredTargetLanguage(enrollment),
+                          child: Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.95),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: isUpdatingLanguage
+                                  ? const SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.edit_outlined,
+                                      color: _primaryBlue,
+                                      size: 16,
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -456,6 +618,19 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
         ),
       ),
     );
+  }
+
+  String _targetLanguageLabel(String code) {
+    switch (code) {
+      case 'EN':
+        return 'EN - English';
+      case 'VI':
+        return 'VI - Vietnamese';
+      case 'JA':
+        return 'JA - Japanese';
+      default:
+        return code;
+    }
   }
 
   Widget _buildBottomNav() {
@@ -559,4 +734,3 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
     );
   }
 }
-

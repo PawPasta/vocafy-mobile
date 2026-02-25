@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../data/services/syllabus_service.dart';
 import '../../data/services/enrollment_service.dart';
 import '../../data/services/learning_service.dart';
@@ -14,11 +14,11 @@ class SyllabusDetailScreen extends StatefulWidget {
   final bool showTestGlow;
 
   const SyllabusDetailScreen({
-    Key? key,
     required this.syllabusId,
     this.isEnrolled = false,
     this.showTestGlow = false,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   State<SyllabusDetailScreen> createState() => _SyllabusDetailScreenState();
@@ -65,9 +65,15 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
   Future<void> _enrollSyllabus() async {
     if (_isEnrolling) return;
 
+    final selectedLanguage = await _showTargetLanguageDialog();
+    if (selectedLanguage == null) return;
+
     setState(() => _isEnrolling = true);
 
-    final success = await enrollmentService.enrollSyllabus(widget.syllabusId);
+    final success = await enrollmentService.enrollSyllabus(
+      widget.syllabusId,
+      preferredTargetLanguage: selectedLanguage,
+    );
 
     if (mounted) {
       setState(() => _isEnrolling = false);
@@ -91,6 +97,63 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
           ),
         );
       }
+    }
+  }
+
+  Future<String?> _showTargetLanguageDialog() {
+    String selectedLanguage = 'EN';
+
+    return showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Preferred Learning Language'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: EnrollmentService.supportedTargetLanguages.map((
+                  lang,
+                ) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: ChoiceChip(
+                      label: Text(_targetLanguageLabel(lang)),
+                      selected: selectedLanguage == lang,
+                      onSelected: (_) =>
+                          setDialogState(() => selectedLanguage = lang),
+                    ),
+                  );
+                }).toList(),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () =>
+                      Navigator.of(dialogContext).pop(selectedLanguage),
+                  child: const Text('Enroll'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  String _targetLanguageLabel(String code) {
+    switch (code) {
+      case 'EN':
+        return 'EN - English';
+      case 'VI':
+        return 'VI - Vietnamese';
+      case 'JA':
+        return 'JA - Japanese';
+      default:
+        return code;
     }
   }
 
@@ -630,4 +693,3 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
     );
   }
 }
-

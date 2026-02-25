@@ -7,6 +7,7 @@ class Enrollment {
   final String imageIcon;
   final int totalDays;
   final String languageSet;
+  final String preferredTargetLanguage;
   final String categoryName;
   final String status;
   final int progress;
@@ -22,6 +23,7 @@ class Enrollment {
     required this.imageIcon,
     required this.totalDays,
     required this.languageSet,
+    this.preferredTargetLanguage = 'EN',
     required this.categoryName,
     required this.status,
     required this.progress,
@@ -37,6 +39,12 @@ class Enrollment {
     }
 
     String asString(Object? v) => (v ?? '').toString();
+
+    String asLanguage(Object? v) {
+      final language = (v ?? '').toString().trim().toUpperCase();
+      if (language.isEmpty) return 'EN';
+      return language;
+    }
 
     bool asBool(Object? v) {
       if (v is bool) return v;
@@ -93,6 +101,11 @@ class Enrollment {
             syllabusData?['languageSet'] ??
             json['language_set'] ??
             json['languageSet'],
+      ),
+      preferredTargetLanguage: asLanguage(
+        json['preferred_target_language'] ??
+            json['preferredTargetLanguage'] ??
+            'EN',
       ),
       categoryName: asString(
         syllabusData?['category_name'] ??
