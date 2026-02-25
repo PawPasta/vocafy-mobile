@@ -311,7 +311,9 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
                 icon: Icons.book_outlined,
                 label: 'Vocab',
                 isActive: false,
-                onTap: () {},
+                onTap: () {
+                  Navigator.of(context).pushNamed(RouteNames.myVocabulary);
+                },
               ),
               _buildBottomItem(
                 icon: Icons.school_outlined,

@@ -239,10 +239,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHeaderIconButton(
-    IconData icon, {
-    VoidCallback? onTap,
-  }) {
+  Widget _buildHeaderIconButton(IconData icon, {VoidCallback? onTap}) {
     return _Pressable(
       onTap: onTap,
       child: Container(
@@ -881,6 +878,8 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.of(
             context,
           ).push(MaterialPageRoute(builder: (_) => const EnrollmentsScreen()));
+        } else if (index == 3) {
+          Navigator.of(context).pushNamed(RouteNames.myVocabulary);
         } else if (index == 4) {
           Navigator.of(context).pushNamed(RouteNames.profile);
         } else if (index != 0) {
@@ -928,10 +927,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildAnimatedSection({
-    required Widget child,
-    double offsetY = 0.06,
-  }) {
+  Widget _buildAnimatedSection({required Widget child, double offsetY = 0.06}) {
     return AnimatedSlide(
       duration: const Duration(milliseconds: 360),
       curve: Curves.easeOutCubic,

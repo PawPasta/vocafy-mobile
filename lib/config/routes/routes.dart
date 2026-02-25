@@ -8,6 +8,7 @@ import '../../features/syllabus/syllabus_detail_screen.dart';
 import '../../features/topic/topic_detail_screen.dart';
 import '../../features/course/course_detail_screen.dart';
 import '../../features/vocabulary/vocabulary_detail_screen.dart';
+import '../../features/vocabulary/my_vocabulary_screen.dart';
 import '../../features/enrollments/enrollments_screen.dart';
 import 'route_names.dart';
 
@@ -69,6 +70,9 @@ class AppRoutes {
           );
         }
         return _buildRoute(VocabularyDetailScreen(vocabularyId: vocabularyId));
+
+      case RouteNames.myVocabulary:
+        return _buildRoute(const MyVocabularyScreen());
 
       case RouteNames.enrollments:
         return _buildRoute(const EnrollmentsScreen());

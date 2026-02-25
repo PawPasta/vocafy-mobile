@@ -673,7 +673,9 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
                 icon: Icons.book_outlined,
                 label: 'Vocab',
                 isActive: false,
-                onTap: () {},
+                onTap: () {
+                  Navigator.of(context).pushNamed(RouteNames.myVocabulary);
+                },
               ),
               _buildBottomItem(
                 icon: Icons.person_outline,

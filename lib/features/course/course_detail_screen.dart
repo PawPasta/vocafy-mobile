@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../data/services/course_service.dart';
 import '../../data/services/vocabulary_service.dart';
 import '../../data/services/learning_service.dart';
@@ -339,7 +339,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 icon: Icons.book_outlined,
                 label: 'Vocab',
                 isActive: true,
-                onTap: () {},
+                onTap: () {
+                  Navigator.of(context).pushNamed(RouteNames.myVocabulary);
+                },
               ),
               _buildBottomItem(
                 icon: Icons.school_outlined,
@@ -413,4 +415,3 @@ class _CourseData {
 
   _CourseData({this.course, required this.vocabularies});
 }
-
