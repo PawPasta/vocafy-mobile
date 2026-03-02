@@ -235,10 +235,11 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
     final isLast = _currentIndex == _cards.length - 1;
     final h = MediaQuery.of(context).size.height;
 
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
         _confirmExit();
-        return false;
       },
       child: Scaffold(
         backgroundColor: Colors.grey.shade100,

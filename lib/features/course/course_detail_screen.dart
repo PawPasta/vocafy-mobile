@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import '../../data/services/course_service.dart';
 import '../../data/services/vocabulary_service.dart';
-import '../../data/services/learning_service.dart';
 import '../../data/models/course.dart';
 import '../../data/models/vocabulary.dart';
 import '../../config/routes/route_names.dart';
 import '../vocabulary/vocabulary_detail_screen.dart';
-import '../learning/flashcard_screen.dart';
 
 class CourseDetailScreen extends StatefulWidget {
   final int courseId;
   final int? syllabusId;
 
-  const CourseDetailScreen({Key? key, required this.courseId, this.syllabusId})
-    : super(key: key);
+  const CourseDetailScreen({
+    super.key,
+    required this.courseId,
+    this.syllabusId,
+  });
 
   @override
   State<CourseDetailScreen> createState() => _CourseDetailScreenState();
@@ -21,7 +22,6 @@ class CourseDetailScreen extends StatefulWidget {
 
 class _CourseDetailScreenState extends State<CourseDetailScreen> {
   late final Future<_CourseData> _dataFuture;
-  bool _isStartingLearning = false;
 
   static const _primaryBlue = Color(0xFF4F6CFF);
 
@@ -41,43 +41,6 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       course: results[0] as Course?,
       vocabularies: results[1] as List<Vocabulary>,
     );
-  }
-
-  Future<void> _startLearning(Course course) async {
-    if (_isStartingLearning) return;
-
-    setState(() => _isStartingLearning = true);
-
-    // Get syllabusId from widget or course's topic relationship
-    final syllabusId = widget.syllabusId ?? 0;
-
-    final learningSet = await learningService.startLearning(
-      syllabusId: syllabusId,
-    );
-
-    if (mounted) {
-      setState(() => _isStartingLearning = false);
-
-      if (learningSet != null && learningSet.cards.isNotEmpty) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => FlashcardScreen(
-              learningSet: learningSet,
-              courseTitle: course.title,
-              syllabusId: widget.syllabusId,
-            ),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No vocabulary to learn or a connection error.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 
   @override
@@ -258,7 +221,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       child: Image.network(
                         vocab.imageUrl!,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
+                        errorBuilder: (context, error, stackTrace) =>
                             const Icon(Icons.text_fields, color: _primaryBlue),
                       ),
                     )

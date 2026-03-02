@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/api/user_service.dart';
 import '../../core/models/user_model.dart';
@@ -7,7 +7,7 @@ import '../../data/services/auth_service.dart';
 import '../../assets/app_remote_images.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   Widget _label(String text) =>
       Text(text, style: const TextStyle(fontWeight: FontWeight.w600));
@@ -37,6 +37,12 @@ class ProfileScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 8,
+                  ),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF5A4BFF),
+                    borderRadius: BorderRadius.vertical(
+                      bottom: Radius.circular(18),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -90,12 +96,6 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF5A4BFF),
-                    borderRadius: BorderRadius.vertical(
-                      bottom: Radius.circular(18),
-                    ),
-                  ),
                 ),
 
                 const SizedBox(height: 12),
@@ -128,35 +128,43 @@ class ProfileScreen extends StatelessWidget {
                           // Upgrade box above Full name (right-aligned)
                           Align(
                             alignment: Alignment.centerRight,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF5A4BFF),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: const Color(0xFF4639E6),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(10),
+                              onTap: () {
+                                Navigator.of(
+                                  context,
+                                ).pushNamed(RouteNames.premiumPackages);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
                                 ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: const [
-                                  Icon(
-                                    Icons.star,
-                                    color: Colors.white,
-                                    size: 18,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF5A4BFF),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: const Color(0xFF4639E6),
                                   ),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Upgrade',
-                                    style: TextStyle(
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    Icon(
+                                      Icons.workspace_premium,
                                       color: Colors.white,
-                                      fontWeight: FontWeight.w600,
+                                      size: 18,
                                     ),
-                                  ),
-                                ],
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Get PLUS',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -455,4 +463,3 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 }
-

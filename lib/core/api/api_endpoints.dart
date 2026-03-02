@@ -48,4 +48,11 @@ class Api {
 
   // ==================== Learning Endpoints ====================
   static const String learningSets = '/learning-sets';
+
+  // ==================== Premium Endpoints ====================
+  static const String premiumPackages = '/premium-packages';
+
+  // ==================== Payment Endpoints ====================
+  static const String paymentsSubscribe = '/payments/subscribe';
+  static const String paymentsCheckTransaction = '/payments/check-transaction';
 }

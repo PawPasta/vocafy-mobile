@@ -20,7 +20,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   late final Future<_ProfileData> _profileFuture;
   late final Future<List<Syllabus>> _trialSyllabiFuture;
   late final Future<List<AppCategory>> _categoriesFuture;
@@ -28,6 +29,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final PageController _bannerController = PageController(
     viewportFraction: 0.92,
   );
+  late final AnimationController _plusButtonController;
+  late final Animation<double> _plusGlow;
   Timer? _bannerTimer;
   int _currentBanner = 0;
   int _selectedIndex = 0;
@@ -46,6 +49,15 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _plusButtonController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat(reverse: true);
+    _plusGlow = CurvedAnimation(
+      parent: _plusButtonController,
+      curve: Curves.easeInOut,
+    );
+
     _profileFuture = _fetchProfile();
     _trialSyllabiFuture = syllabusService
         .listSyllabi(page: 0, size: 10)
@@ -84,6 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _bannerTimer?.cancel();
     _bannerController.dispose();
+    _plusButtonController.dispose();
     super.dispose();
   }
 
@@ -232,7 +245,90 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: 14),
+              _buildGetPlusButton(context),
             ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildGetPlusButton(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _plusGlow,
+      builder: (context, child) {
+        final t = _plusGlow.value;
+        return Transform.scale(
+          scale: 1 + (0.02 * t),
+          child: _Pressable(
+            onTap: () =>
+                Navigator.of(context).pushNamed(RouteNames.premiumPackages),
+            child: Container(
+              height: 50,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFFD976), Color(0xFFFFA438)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(
+                      0xFFFFA438,
+                    ).withValues(alpha: 0.2 + (0.2 * t)),
+                    blurRadius: 14 + (10 * t),
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Align(
+                        alignment: Alignment(-1.8 + (3.6 * t), 0),
+                        child: Container(
+                          width: 70,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.white.withValues(alpha: 0),
+                                Colors.white.withValues(alpha: 0.24),
+                                Colors.white.withValues(alpha: 0),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.auto_awesome,
+                            color: Color(0xFF2D2100),
+                            size: 20,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Get PLUS',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF2D2100),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         );
       },
@@ -960,17 +1056,8 @@ class _HomeScreenState extends State<HomeScreen> {
 class _Pressable extends StatefulWidget {
   final Widget child;
   final VoidCallback? onTap;
-  final Duration duration;
-  final double pressedScale;
-  final double pressedOpacity;
 
-  const _Pressable({
-    required this.child,
-    this.onTap,
-    this.duration = const Duration(milliseconds: 120),
-    this.pressedScale = 0.98,
-    this.pressedOpacity = 0.94,
-  });
+  const _Pressable({required this.child, this.onTap});
 
   @override
   State<_Pressable> createState() => _PressableState();
@@ -994,12 +1081,12 @@ class _PressableState extends State<_Pressable> {
       onTapUp: interactive ? (_) => _setPressed(false) : null,
       onTapCancel: interactive ? () => _setPressed(false) : null,
       child: AnimatedScale(
-        scale: _pressed ? widget.pressedScale : 1,
-        duration: widget.duration,
+        scale: _pressed ? 0.98 : 1,
+        duration: const Duration(milliseconds: 120),
         curve: Curves.easeOut,
         child: AnimatedOpacity(
-          opacity: _pressed ? widget.pressedOpacity : 1,
-          duration: widget.duration,
+          opacity: _pressed ? 0.94 : 1,
+          duration: const Duration(milliseconds: 120),
           child: widget.child,
         ),
       ),

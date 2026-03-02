@@ -9,6 +9,7 @@ class RouteNames {
   static const String login = '/login';
   static const String register = '/register';
   static const String profile = '/profile';
+  static const String premiumPackages = '/premium-packages';
 
   // Detail screens
   static const String syllabusDetail = '/syllabus/detail';

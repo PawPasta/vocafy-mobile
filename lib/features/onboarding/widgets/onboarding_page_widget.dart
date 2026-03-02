@@ -39,7 +39,7 @@ class OnboardingPageWidget extends StatelessWidget {
                 page.imagePath,
                 height: 280,
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const SizedBox(
+                errorBuilder: (context, error, stackTrace) => const SizedBox(
                   height: 280,
                   child: Center(
                     child: Icon(Icons.image_not_supported, size: 44),

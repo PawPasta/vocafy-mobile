@@ -4,6 +4,7 @@ import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/auth/login/login_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/profile/profile_screen.dart';
+import '../../features/premium/premium_packages_screen.dart';
 import '../../features/syllabus/syllabus_detail_screen.dart';
 import '../../features/topic/topic_detail_screen.dart';
 import '../../features/course/course_detail_screen.dart';
@@ -34,6 +35,9 @@ class AppRoutes {
 
       case RouteNames.profile:
         return _buildRoute(const ProfileScreen());
+
+      case RouteNames.premiumPackages:
+        return _buildRoute(const PremiumPackagesScreen());
 
       case RouteNames.syllabusDetail:
         final syllabusId = settings.arguments as int?;

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import '../../data/models/quiz_question.dart';
 import '../../data/services/quiz_service.dart';
@@ -9,8 +9,7 @@ class QuizScreen extends StatefulWidget {
   final int? syllabusId;
   final String? syllabusTitle;
 
-  const QuizScreen({Key? key, this.syllabusId, this.syllabusTitle})
-    : super(key: key);
+  const QuizScreen({super.key, this.syllabusId, this.syllabusTitle});
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
@@ -33,7 +32,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   int _stageCorrectAnswers = 0; // Correct answers in current stage
 
   // Pronunciation challenge tracking
-  List<String> _stageTermsForPronunciation =
+  final List<String> _stageTermsForPronunciation =
       []; // Terms from LOOK_TERM_SELECT_MEANING in current stage
 
   // Streak tracking
@@ -1178,7 +1177,9 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    isCorrect ? 'Correct streak: $streak' : 'Wrong streak: $streak',
+                    isCorrect
+                        ? 'Correct streak: $streak'
+                        : 'Wrong streak: $streak',
                     style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                   ),
                 ],
@@ -1735,4 +1736,3 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     );
   }
 }
-

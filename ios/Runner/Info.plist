@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Ung dung can quyen de luu anh QR thanh toan vao thu vien.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Ung dung can quyen truy cap thu vien anh de luu va hien thi QR thanh toan.</string>
 </dict>
 </plist>
