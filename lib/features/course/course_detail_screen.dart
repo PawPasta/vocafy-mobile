@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import '../../data/services/course_service.dart';
 import '../../data/services/vocabulary_service.dart';
-import '../../data/services/learning_service.dart';
 import '../../data/models/course.dart';
 import '../../data/models/vocabulary.dart';
 import '../../config/routes/route_names.dart';
 import '../vocabulary/vocabulary_detail_screen.dart';
-import '../learning/flashcard_screen.dart';
 
 class CourseDetailScreen extends StatefulWidget {
   final int courseId;
   final int? syllabusId;
 
-  const CourseDetailScreen({Key? key, required this.courseId, this.syllabusId})
-    : super(key: key);
+  const CourseDetailScreen({
+    super.key,
+    required this.courseId,
+    this.syllabusId,
+  });
 
   @override
   State<CourseDetailScreen> createState() => _CourseDetailScreenState();
@@ -21,7 +22,6 @@ class CourseDetailScreen extends StatefulWidget {
 
 class _CourseDetailScreenState extends State<CourseDetailScreen> {
   late final Future<_CourseData> _dataFuture;
-  bool _isStartingLearning = false;
 
   static const _primaryBlue = Color(0xFF4F6CFF);
 
@@ -41,43 +41,6 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       course: results[0] as Course?,
       vocabularies: results[1] as List<Vocabulary>,
     );
-  }
-
-  Future<void> _startLearning(Course course) async {
-    if (_isStartingLearning) return;
-
-    setState(() => _isStartingLearning = true);
-
-    // Get syllabusId from widget or course's topic relationship
-    final syllabusId = widget.syllabusId ?? 0;
-
-    final learningSet = await learningService.startLearning(
-      syllabusId: syllabusId,
-    );
-
-    if (mounted) {
-      setState(() => _isStartingLearning = false);
-
-      if (learningSet != null && learningSet.cards.isNotEmpty) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => FlashcardScreen(
-              learningSet: learningSet,
-              courseTitle: course.title,
-              syllabusId: widget.syllabusId,
-            ),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Không có từ vựng để học hoặc lỗi kết nối.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 
   @override
@@ -102,11 +65,11 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       color: Colors.red,
                     ),
                     const SizedBox(height: 16),
-                    const Text('Không thể tải khóa học'),
+                    const Text('Unable to load course'),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Quay lại'),
+                      child: const Text('Go back'),
                     ),
                   ],
                 ),
@@ -194,7 +157,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '${vocabularies.length} từ vựng',
+                        '${vocabularies.length} words',
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
@@ -206,7 +169,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 // Vocabulary list
                 Expanded(
                   child: vocabularies.isEmpty
-                      ? const Center(child: Text('Chưa có từ vựng nào'))
+                      ? const Center(child: Text('No vocabulary yet'))
                       : ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           itemCount: vocabularies.length,
@@ -258,7 +221,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       child: Image.network(
                         vocab.imageUrl!,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
+                        errorBuilder: (context, error, stackTrace) =>
                             const Icon(Icons.text_fields, color: _primaryBlue),
                       ),
                     )
@@ -339,7 +302,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 icon: Icons.book_outlined,
                 label: 'Vocab',
                 isActive: true,
-                onTap: () {},
+                onTap: () {
+                  Navigator.of(context).pushNamed(RouteNames.myVocabulary);
+                },
               ),
               _buildBottomItem(
                 icon: Icons.school_outlined,

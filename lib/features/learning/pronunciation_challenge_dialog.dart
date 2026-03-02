@@ -3,6 +3,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../../core/tts/tts_utils.dart';
 
 /// Dialog for pronunciation challenge after completing a stage
 /// with LOOK_TERM_SELECT_MEANING questions
@@ -43,7 +44,7 @@ class _PronunciationChallengeDialogState
   bool _hasResult = false;
   bool _isCorrect = false;
   String _spokenText = '';
-  String _statusMessage = 'Nhấn nút mic để phát âm';
+  String _statusMessage = 'Tap the mic to start speaking';
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -86,7 +87,6 @@ class _PronunciationChallengeDialogState
   }
 
   Future<void> _initTts() async {
-    await _tts.setLanguage('ja-JP');
     await _tts.setSpeechRate(0.5);
   }
 
@@ -96,7 +96,7 @@ class _PronunciationChallengeDialogState
     if (status != PermissionStatus.granted) {
       if (!mounted) return;
       setState(() {
-        _statusMessage = 'Cần quyền truy cập microphone';
+        _statusMessage = 'Microphone permission is required';
         _speechEnabled = false;
       });
       return;
@@ -110,7 +110,7 @@ class _PronunciationChallengeDialogState
           if (!mounted) return;
           setState(() {
             _isListening = false;
-            _statusMessage = 'Lỗi nhận diện. Thử lại nhé!';
+            _statusMessage = 'Recognition error. Please try again.';
           });
           _pulseController.stop();
         },
@@ -119,7 +119,7 @@ class _PronunciationChallengeDialogState
       if (!mounted) return;
       setState(() {
         if (!_speechEnabled) {
-          _statusMessage = 'Không thể khởi tạo nhận diện giọng nói';
+          _statusMessage = 'Speech recognition could not be initialized';
         }
       });
     } catch (e) {
@@ -127,7 +127,7 @@ class _PronunciationChallengeDialogState
       if (!mounted) return;
       setState(() {
         _speechEnabled = false;
-        _statusMessage = 'Lỗi khởi tạo. Kiểm tra quyền microphone.';
+        _statusMessage = 'Initialization error. Check microphone permission.';
       });
     }
   }
@@ -144,6 +144,12 @@ class _PronunciationChallengeDialogState
   }
 
   Future<void> _speakTerm() async {
+    final ready = await TtsUtils.prepareLanguage(
+      tts: _tts,
+      context: context,
+      locale: TtsUtils.jaJP,
+    );
+    if (!ready) return;
     await _tts.speak(widget.termText);
   }
 
@@ -157,7 +163,7 @@ class _PronunciationChallengeDialogState
       _isListening = true;
       _hasResult = false;
       _spokenText = '';
-      _statusMessage = 'Đang nghe...';
+      _statusMessage = 'Listening...';
     });
 
     _pulseController.repeat(reverse: true);
@@ -201,8 +207,8 @@ class _PronunciationChallengeDialogState
       _hasResult = true;
       _isCorrect = _isMatchingPronunciation(spoken, expected);
       _statusMessage = _isCorrect
-          ? 'Chính xác! Bạn giỏi lắm! 🎉'
-          : 'Thôi, bạn may mắn lần sau! 💪';
+          ? 'Correct! Great job! 🎉'
+          : "Not quite. You'll get it next time! 💪";
     });
 
     _resultController.forward(from: 0);
@@ -314,7 +320,7 @@ class _PronunciationChallengeDialogState
                   Icon(Icons.mic, color: _primaryBlue, size: 20),
                   const SizedBox(width: 8),
                   Text(
-                    'Thử thách phát âm',
+                    'Pronunciation Challenge',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -348,7 +354,7 @@ class _PronunciationChallengeDialogState
               child: Column(
                 children: [
                   const Text(
-                    'Hãy phát âm từ này:',
+                    'Pronounce this word:',
                     style: TextStyle(fontSize: 14, color: Colors.white70),
                   ),
                   const SizedBox(height: 12),
@@ -455,7 +461,7 @@ class _PronunciationChallengeDialogState
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    'Đang nghe: "$_spokenText"',
+                    'Listening: "$_spokenText"',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey[700],
@@ -499,15 +505,15 @@ class _PronunciationChallengeDialogState
               if (_spokenText.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(
-                  'Bạn nói: "$_spokenText"',
+                  'You said: "$_spokenText"',
                   style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
               ],
               const SizedBox(height: 16),
               Text(
                 widget.isFinalStage
-                    ? 'Đang quay về...'
-                    : 'Tiếp tục Giai đoạn ${widget.currentStage + 1}...',
+                    ? 'Returning...'
+                    : 'Continue to Stage ${widget.currentStage + 1}...',
                 style: TextStyle(fontSize: 14, color: Colors.grey[500]),
               ),
             ],
@@ -521,7 +527,7 @@ class _PronunciationChallengeDialogState
                   setState(() {
                     _hasResult = true;
                     _isCorrect = false;
-                    _statusMessage = 'Đã bỏ qua. Tiếp tục nào! 💪';
+                    _statusMessage = "Skipped. Let's keep going! 💪";
                   });
                   _resultController.forward(from: 0);
                   Future.delayed(const Duration(milliseconds: 1500), () {
@@ -531,7 +537,7 @@ class _PronunciationChallengeDialogState
                   });
                 },
                 child: Text(
-                  'Bỏ qua',
+                  'Skip',
                   style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                 ),
               ),

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../assets/app_remote_images.dart';
 import '../../core/api/api_client.dart';
 import '../../core/api/api_endpoints.dart';
-import '../../data/services/auth_service.dart';
 import '../../data/models/category.dart';
 import '../../data/models/syllabus.dart';
 import '../../data/models/enrollment.dart';
@@ -21,19 +20,21 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   late final Future<_ProfileData> _profileFuture;
   late final Future<List<Syllabus>> _trialSyllabiFuture;
   late final Future<List<AppCategory>> _categoriesFuture;
   late final Future<List<Enrollment>> _enrollmentsFuture;
-  final PageController _categoryController = PageController();
   final PageController _bannerController = PageController(
     viewportFraction: 0.92,
   );
+  late final AnimationController _plusButtonController;
+  late final Animation<double> _plusGlow;
   Timer? _bannerTimer;
   int _currentBanner = 0;
-  int _currentCategoryPage = 0;
   int _selectedIndex = 0;
+  bool _contentVisible = false;
 
   final List<String> _bannerImages = AppRemoteImages.homeBannerImages;
 
@@ -48,6 +49,15 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _plusButtonController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat(reverse: true);
+    _plusGlow = CurvedAnimation(
+      parent: _plusButtonController,
+      curve: Curves.easeInOut,
+    );
+
     _profileFuture = _fetchProfile();
     _trialSyllabiFuture = syllabusService
         .listSyllabi(page: 0, size: 10)
@@ -76,13 +86,17 @@ class _HomeScreenState extends State<HomeScreen> {
         curve: Curves.easeInOut,
       );
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() => _contentVisible = true);
+    });
   }
 
   @override
   void dispose() {
     _bannerTimer?.cancel();
     _bannerController.dispose();
-    _categoryController.dispose();
+    _plusButtonController.dispose();
     super.dispose();
   }
 
@@ -122,12 +136,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildCategorySection(),
+                    _buildAnimatedSection(child: _buildCategorySection()),
                     const SizedBox(height: 16),
-                    _buildBannerCarousel(),
+                    _buildAnimatedSection(
+                      child: _buildBannerCarousel(),
+                      offsetY: 0.05,
+                    ),
                     const SizedBox(height: 16),
-                    _buildEnrolledSyllabusSection(),
-                    _buildTrialCoursesSection(),
+                    _buildAnimatedSection(
+                      child: _buildEnrolledSyllabusSection(),
+                      offsetY: 0.04,
+                    ),
+                    _buildAnimatedSection(
+                      child: _buildTrialCoursesSection(),
+                      offsetY: 0.03,
+                    ),
                   ],
                 ),
               ),
@@ -160,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Row(
                 children: [
-                  GestureDetector(
+                  _Pressable(
                     onTap: () =>
                         Navigator.of(context).pushNamed(RouteNames.profile),
                     child: Container(
@@ -215,11 +238,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                   ),
-                  _buildHeaderIconButton(Icons.notifications_none),
+                  _buildHeaderIconButton(
+                    Icons.notifications_none,
+                    onTap: () => _showComingSoon('Notifications'),
+                  ),
                 ],
               ),
               const SizedBox(height: 14),
-              _buildSearchBar(),
+              _buildGetPlusButton(context),
             ],
           ),
         );
@@ -227,93 +253,107 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHeaderIconButton(IconData icon) {
-    return Container(
-      width: 42,
-      height: 42,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: _headerIconShadow,
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Icon(icon, color: _primaryBlue),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 44,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    decoration: const InputDecoration(
-                      hintText: 'Search course',
-                      hintStyle: TextStyle(color: _textMuted),
-                      border: InputBorder.none,
-                      isDense: true,
-                    ),
-                    style: const TextStyle(color: _textDark, fontSize: 14),
-                  ),
+  Widget _buildGetPlusButton(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _plusGlow,
+      builder: (context, child) {
+        final t = _plusGlow.value;
+        return Transform.scale(
+          scale: 1 + (0.02 * t),
+          child: _Pressable(
+            onTap: () =>
+                Navigator.of(context).pushNamed(RouteNames.premiumPackages),
+            child: Container(
+              height: 50,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFFD976), Color(0xFFFFA438)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                const Icon(Icons.search, size: 20, color: _primaryBlue),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        GestureDetector(
-          onTap: () async {
-            final ok = await showDialog<bool>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text('Đăng xuất'),
-                content: const Text('Bạn có chắc muốn đăng xuất không?'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(false),
-                    child: const Text('Hủy'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(true),
-                    child: const Text('Đăng xuất'),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(
+                      0xFFFFA438,
+                    ).withValues(alpha: 0.2 + (0.2 * t)),
+                    blurRadius: 14 + (10 * t),
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
-            );
-            if (ok != true) return;
-
-            await authService.logout();
-            if (!mounted) return;
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil(RouteNames.login, (route) => false);
-          },
-          child: Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: _primaryBlueDark,
-              borderRadius: BorderRadius.circular(14),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Align(
+                        alignment: Alignment(-1.8 + (3.6 * t), 0),
+                        child: Container(
+                          width: 70,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.white.withValues(alpha: 0),
+                                Colors.white.withValues(alpha: 0.24),
+                                Colors.white.withValues(alpha: 0),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.auto_awesome,
+                            color: Color(0xFF2D2100),
+                            size: 20,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Get PLUS',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF2D2100),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            child: const Icon(Icons.logout, color: Colors.white, size: 22),
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHeaderIconButton(IconData icon, {VoidCallback? onTap}) {
+    return _Pressable(
+      onTap: onTap,
+      child: Container(
+        width: 42,
+        height: 42,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: _headerIconShadow,
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
         ),
-      ],
+        child: Icon(icon, color: _primaryBlue),
+      ),
     );
   }
 
@@ -321,77 +361,67 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Category >',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        Row(
+          children: [
+            const Text(
+              'Categories',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: _chipBlue,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _primaryBlue.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(Icons.lock_outline, size: 12, color: _primaryBlue),
+                  SizedBox(width: 4),
+                  Text(
+                    'View-only',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: _primaryBlue,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
+        const Text(
+          'Tap to preview - Coming soon.',
+          style: TextStyle(fontSize: 12, color: _textMuted),
+        ),
+        const SizedBox(height: 10),
         FutureBuilder<List<AppCategory>>(
           future: _categoriesFuture,
           builder: (context, snapshot) {
             final categories = snapshot.data ?? const <AppCategory>[];
-            final pageCount = (categories.length / 4).ceil();
 
             if (snapshot.connectionState == ConnectionState.waiting &&
                 categories.isEmpty) {
-              return _buildCategoryLoadingRow();
+              return _buildCategoryLoadingTags();
             }
 
             if (categories.isEmpty) {
-              return _buildFallbackCategoryPager();
+              return _buildFallbackCategoryTags();
             }
 
             return Column(
-              children: [
-                SizedBox(
-                  height: 92,
-                  child: PageView.builder(
-                    controller: _categoryController,
-                    itemCount: pageCount,
-                    onPageChanged: (index) {
-                      setState(() => _currentCategoryPage = index);
-                    },
-                    itemBuilder: (context, pageIndex) {
-                      final start = pageIndex * 4;
-                      final end = (start + 4) > categories.length
-                          ? categories.length
-                          : (start + 4);
-                      final pageItems = categories.sublist(start, end);
-
-                      return Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: List.generate(4, (i) {
-                          if (i < pageItems.length) {
-                            return _buildCategoryFromApi(pageItems[i]);
-                          }
-                          return const SizedBox(width: 84);
-                        }),
-                      );
-                    },
-                  ),
-                ),
-                if (pageCount > 1) ...[
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      pageCount,
-                      (index) => AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: _currentCategoryPage == index ? 16 : 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: _currentCategoryPage == index
-                              ? _primaryBlue
-                              : const Color(0xFFD7DEFF),
-                          borderRadius: BorderRadius.circular(99),
-                        ),
-                      ),
+              children: categories
+                  .map(
+                    (c) => _buildCategoryTag(
+                      c.name,
+                      onTap: () => _showComingSoon('Category'),
                     ),
-                  ),
-                ],
-              ],
+                  )
+                  .toList(),
             );
           },
         ),
@@ -399,84 +429,119 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCategoryLoadingRow() {
-    return SizedBox(
-      height: 92,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: List.generate(4, (index) {
-          return SizedBox(
-            width: 84,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: _chipBlue,
-                    borderRadius: BorderRadius.circular(18),
-                  ),
+  Widget _buildCategoryLoadingTags() {
+    return Column(
+      children: List.generate(4, (index) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF2F5FF),
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFD7DEFF),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 8),
-                Container(
-                  width: 64,
-                  height: 10,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Container(
+                  height: 12,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEEF2FF),
+                    color: const Color(0xFFE7ECFF),
                     borderRadius: BorderRadius.circular(99),
                   ),
                 ),
-              ],
+              ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildFallbackCategoryTags() {
+    const tags = ['General', 'Business', 'Science', 'Lifestyle', 'Media'];
+    return Column(
+      children: tags
+          .map(
+            (tag) => _buildCategoryTag(
+              tag,
+              onTap: () => _showComingSoon('Category'),
             ),
-          );
-        }),
-      ),
+          )
+          .toList(),
     );
   }
 
-  Widget _buildFallbackCategoryPager() {
-    final icons = <IconData>[
-      Icons.grid_view_rounded,
-      Icons.monetization_on_outlined,
-      Icons.science_outlined,
-      Icons.favorite_border,
-      Icons.play_circle_outline,
-    ];
-    final pageCount = (icons.length / 4).ceil();
-
-    return SizedBox(
-      height: 92,
-      child: PageView.builder(
-        itemCount: pageCount,
-        itemBuilder: (context, pageIndex) {
-          final start = pageIndex * 4;
-          final end = (start + 4) > icons.length ? icons.length : (start + 4);
-          final pageItems = icons.sublist(start, end);
-
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(4, (i) {
-              if (i < pageItems.length) {
-                return _buildCategoryIcon(pageItems[i], size: 56);
-              }
-              return const SizedBox(width: 84);
-            }),
-          );
-        },
+  Widget _buildCategoryTag(String label, {VoidCallback? onTap}) {
+    return _Pressable(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF2F5FF),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: const Color(0xFFE0E7FF)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: const BoxDecoration(
+                color: _primaryBlue,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: _textDark,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE0E7FF)),
+              ),
+              child: Text(
+                _categoryAbbrev(label),
+                style: const TextStyle(
+                  color: _primaryBlue,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(Icons.sell_outlined, size: 16, color: _primaryBlue),
+          ],
+        ),
       ),
-    );
-  }
-
-  Widget _buildCategoryIcon(IconData icon, {double size = 48}) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: _chipBlue,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Icon(icon, color: _primaryBlue, size: size * 0.55),
     );
   }
 
@@ -494,7 +559,7 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Syllabus đã Enrollment >',
+                  'Enrolled Syllabus',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                 ),
                 TextButton(
@@ -505,7 +570,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   },
-                  child: const Text('Xem tất cả'),
+                  child: const Text('See all'),
                 ),
               ],
             ),
@@ -513,7 +578,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Column(
               children: [
                 for (int i = 0; i < enrollments.length && i < 3; i++) ...[
-                  GestureDetector(
+                  _Pressable(
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -617,7 +682,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   'Trial Syllabus >',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                 ),
-                TextButton(onPressed: () {}, child: const Text('See all')),
+                TextButton(
+                  onPressed: () => _showComingSoon('Syllabus list'),
+                  child: const Text('See all'),
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -642,7 +710,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   return const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
                     child: Text(
-                      'Không có syllabus thử mới.',
+                      'No new trial syllabi.',
                       style: TextStyle(color: _textMuted),
                     ),
                   );
@@ -651,7 +719,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 return Column(
                   children: [
                     for (int i = 0; i < items.length; i++) ...[
-                      GestureDetector(
+                      _Pressable(
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
@@ -701,37 +769,40 @@ class _HomeScreenState extends State<HomeScreen> {
             itemBuilder: (context, index) {
               return Padding(
                 padding: const EdgeInsets.only(right: 12),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.network(_bannerImages[index], fit: BoxFit.cover),
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
-                            colors: [
-                              Colors.black.withAlpha(115),
-                              Colors.transparent,
-                            ],
+                child: _Pressable(
+                  onTap: () => _showComingSoon('Offers'),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.network(_bannerImages[index], fit: BoxFit.cover),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [
+                                Colors.black.withAlpha(115),
+                                Colors.transparent,
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      const Positioned(
-                        left: 16,
-                        bottom: 16,
-                        child: Text(
-                          '',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
+                        const Positioned(
+                          left: 16,
+                          bottom: 16,
+                          child: Text(
+                            '',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -802,49 +873,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: () => _showComingSoon('Quick play'),
             icon: const Icon(Icons.play_circle_fill, color: Colors.white),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryFromApi(AppCategory category) {
-    return SizedBox(
-      width: 84,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: _chipBlue,
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Center(
-              child: Text(
-                _categoryAbbrev(category.name),
-                style: const TextStyle(
-                  color: _primaryBlue,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            category.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: _textMuted,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-            ),
           ),
         ],
       ),
@@ -944,41 +974,120 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.of(
             context,
           ).push(MaterialPageRoute(builder: (_) => const EnrollmentsScreen()));
+        } else if (index == 3) {
+          Navigator.of(context).pushNamed(RouteNames.myVocabulary);
         } else if (index == 4) {
           Navigator.of(context).pushNamed(RouteNames.profile);
+        } else if (index != 0) {
+          _showComingSoon(label);
         }
       },
-      child: Transform.translate(
-        offset: Offset(0, isActive ? -8 : 0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (isActive)
-              Transform.translate(
-                offset: const Offset(0, -3),
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: _primaryBlue, width: 2),
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutBack,
+        scale: isActive ? 1.06 : 1,
+        child: Transform.translate(
+          offset: Offset(0, isActive ? -8 : 0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (isActive)
+                Transform.translate(
+                  offset: const Offset(0, -3),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: _primaryBlue, width: 2),
+                    ),
+                    child: Icon(icon, color: _primaryBlue, size: 28),
                   ),
-                  child: Icon(icon, color: _primaryBlue, size: 28),
+                )
+              else
+                Icon(icon, color: Colors.white, size: 28),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14.5,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                 ),
-              )
-            else
-              Icon(icon, color: Colors.white, size: 28),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14.5,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
               ),
-            ),
-          ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnimatedSection({required Widget child, double offsetY = 0.06}) {
+    return AnimatedSlide(
+      duration: const Duration(milliseconds: 360),
+      curve: Curves.easeOutCubic,
+      offset: _contentVisible ? Offset.zero : Offset(0, offsetY),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 360),
+        curve: Curves.easeOut,
+        opacity: _contentVisible ? 1 : 0,
+        child: child,
+      ),
+    );
+  }
+
+  void _showComingSoon([String? feature]) {
+    final message = feature == null || feature.trim().isEmpty
+        ? 'Feature in development.'
+        : '$feature is in development.';
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+}
+
+class _Pressable extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+
+  const _Pressable({required this.child, this.onTap});
+
+  @override
+  State<_Pressable> createState() => _PressableState();
+}
+
+class _PressableState extends State<_Pressable> {
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    if (_pressed == value) return;
+    setState(() => _pressed = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final interactive = widget.onTap != null;
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: widget.onTap,
+      onTapDown: interactive ? (_) => _setPressed(true) : null,
+      onTapUp: interactive ? (_) => _setPressed(false) : null,
+      onTapCancel: interactive ? () => _setPressed(false) : null,
+      child: AnimatedScale(
+        scale: _pressed ? 0.98 : 1,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: AnimatedOpacity(
+          opacity: _pressed ? 0.94 : 1,
+          duration: const Duration(milliseconds: 120),
+          child: widget.child,
         ),
       ),
     );

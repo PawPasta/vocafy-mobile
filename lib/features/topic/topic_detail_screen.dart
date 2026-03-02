@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../data/services/topic_service.dart';
-import '../../data/services/learning_service.dart';
 import '../../data/models/topic.dart';
 import '../../config/routes/route_names.dart';
 import '../course/course_detail_screen.dart';
-import '../learning/flashcard_screen.dart';
 
 class TopicDetailScreen extends StatefulWidget {
   final int topicId;
 
-  const TopicDetailScreen({Key? key, required this.topicId}) : super(key: key);
+  const TopicDetailScreen({super.key, required this.topicId});
 
   @override
   State<TopicDetailScreen> createState() => _TopicDetailScreenState();
@@ -249,34 +247,6 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
     );
   }
 
-  Future<void> _startLearning(TopicCourse course, int? syllabusId) async {
-    final learningSet = await learningService.startLearning(
-      syllabusId: syllabusId ?? 0,
-    );
-
-    if (mounted) {
-      if (learningSet != null && learningSet.cards.isNotEmpty) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => FlashcardScreen(
-              learningSet: learningSet,
-              courseTitle: course.title,
-              syllabusId: syllabusId,
-            ),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Không có từ vựng để học hoặc lỗi kết nối.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
   Widget _buildBottomNav() {
     return SafeArea(
       top: false,
@@ -311,7 +281,9 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
                 icon: Icons.book_outlined,
                 label: 'Vocab',
                 isActive: false,
-                onTap: () {},
+                onTap: () {
+                  Navigator.of(context).pushNamed(RouteNames.myVocabulary);
+                },
               ),
               _buildBottomItem(
                 icon: Icons.school_outlined,

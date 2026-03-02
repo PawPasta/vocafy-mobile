@@ -55,6 +55,7 @@ dependencies:
   flutter_tts: ^4.2.5
   flip_card: ^0.7.0
   speech_to_text: ^7.3.0
+  gal: ^2.3.2
 
 dev_dependencies:
   flutter_test:

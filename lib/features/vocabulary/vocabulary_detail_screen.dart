@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import '../../data/services/vocabulary_service.dart';
 import '../../data/models/vocabulary.dart';
+import '../../core/tts/tts_utils.dart';
 
 class VocabularyDetailScreen extends StatefulWidget {
   final int vocabularyId;
 
-  const VocabularyDetailScreen({Key? key, required this.vocabularyId})
-    : super(key: key);
+  const VocabularyDetailScreen({super.key, required this.vocabularyId});
 
   @override
   State<VocabularyDetailScreen> createState() => _VocabularyDetailScreenState();
@@ -62,83 +62,32 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
   }
 
   Future<void> _speak(
-    String text,
-    String languageCode,
-    String scriptType,
-  ) async {
+    String text, {
+    String? languageCode,
+    String? scriptType,
+  }) async {
     if (_isSpeaking && _currentSpeakingText == text) {
       await _flutterTts.stop();
       return;
     }
 
-    // Xác định ngôn ngữ TTS dựa trên languageCode và scriptType
-    String ttsLanguage = _getTtsLanguage(languageCode, scriptType);
-
-    // Kiểm tra xem ngôn ngữ có được hỗ trợ không
-    bool isLanguageAvailable = await _flutterTts.isLanguageAvailable(
-      ttsLanguage,
+    final ttsLanguage = TtsUtils.resolveLocale(
+      languageCode: languageCode,
+      scriptType: scriptType,
+      text: text,
     );
-
-    if (!isLanguageAvailable) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Ngôn ngữ ${_getLanguageName(ttsLanguage)} chưa được cài đặt trên thiết bị. '
-              'Vui lòng vào Cài đặt > Ngôn ngữ & Nhập liệu > Text-to-Speech để tải thêm.',
-            ),
-            duration: const Duration(seconds: 4),
-            action: SnackBarAction(label: 'OK', onPressed: () {}),
-          ),
-        );
-      }
-      return;
-    }
-
-    await _flutterTts.setLanguage(ttsLanguage);
+    final ready = await TtsUtils.prepareLanguage(
+      tts: _flutterTts,
+      context: context,
+      locale: ttsLanguage,
+    );
+    if (!ready) return;
 
     setState(() {
       _currentSpeakingText = text;
     });
 
     await _flutterTts.speak(text);
-  }
-
-  String _getLanguageName(String langCode) {
-    switch (langCode) {
-      case 'ja-JP':
-        return 'Tiếng Nhật';
-      case 'en-US':
-        return 'Tiếng Anh';
-      case 'vi-VN':
-        return 'Tiếng Việt';
-      default:
-        return langCode;
-    }
-  }
-
-  String _getTtsLanguage(String languageCode, String scriptType) {
-    // Xử lý tiếng Nhật
-    if (languageCode.toLowerCase().contains('ja') ||
-        languageCode.toLowerCase().contains('jp') ||
-        scriptType == 'KANJI' ||
-        scriptType == 'KANA' ||
-        scriptType == 'ROMAJI') {
-      return 'ja-JP';
-    }
-
-    // Xử lý tiếng Anh
-    if (languageCode.toLowerCase().contains('en')) {
-      return 'en-US';
-    }
-
-    // Xử lý tiếng Việt
-    if (languageCode.toLowerCase().contains('vi')) {
-      return 'vi-VN';
-    }
-
-    // Mặc định là tiếng Anh
-    return 'en-US';
   }
 
   @override
@@ -169,11 +118,11 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
                       color: Colors.red,
                     ),
                     const SizedBox(height: 16),
-                    const Text('Không thể tải từ vựng'),
+                    const Text('Unable to load vocabulary'),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Quay lại'),
+                      child: const Text('Go back'),
                     ),
                   ],
                 ),
@@ -217,7 +166,7 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
                             ),
                             const Spacer(),
                             const Text(
-                              'Từ vựng',
+                              'Vocabulary',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
@@ -268,13 +217,17 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
                           height: 200,
                           width: double.infinity,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            height: 200,
-                            color: Colors.grey.shade200,
-                            child: const Center(
-                              child: Icon(Icons.image_not_supported, size: 48),
-                            ),
-                          ),
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                height: 200,
+                                color: Colors.grey.shade200,
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    size: 48,
+                                  ),
+                                ),
+                              ),
                         ),
                       ),
                     ),
@@ -289,7 +242,7 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Cách viết',
+                            'Writing',
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 16,
@@ -306,8 +259,8 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
                               return GestureDetector(
                                 onTap: () => _speak(
                                   term.textValue,
-                                  term.languageCode,
-                                  term.scriptType,
+                                  languageCode: term.languageCode,
+                                  scriptType: term.scriptType,
                                 ),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
@@ -380,7 +333,7 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Nghĩa',
+                            'Meaning',
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 16,
@@ -486,12 +439,18 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
                                               ),
                                               const SizedBox(width: 4),
                                               Text(
-                                                'Ví dụ',
+                                                'Example',
                                                 style: TextStyle(
                                                   color: Colors.grey.shade600,
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.w500,
                                                 ),
+                                              ),
+                                              const Spacer(),
+                                              _buildSpeakButton(
+                                                text: meaning.exampleSentence!,
+                                                languageCode:
+                                                    meaning.languageCode,
                                               ),
                                             ],
                                           ),
@@ -509,12 +468,24 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
                                                   .exampleTranslation!
                                                   .isNotEmpty) ...[
                                             const SizedBox(height: 6),
-                                            Text(
-                                              meaning.exampleTranslation!,
-                                              style: TextStyle(
-                                                fontSize: 13,
-                                                color: Colors.grey.shade600,
-                                              ),
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    meaning.exampleTranslation!,
+                                                    style: TextStyle(
+                                                      fontSize: 13,
+                                                      color:
+                                                          Colors.grey.shade600,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                _buildSpeakButton(
+                                                  text: meaning
+                                                      .exampleTranslation!,
+                                                ),
+                                              ],
                                             ),
                                           ],
                                         ],
@@ -541,7 +512,7 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Phát âm',
+                            'Pronunciation',
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 16,
@@ -561,7 +532,7 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
                                       ).showSnackBar(
                                         SnackBar(
                                           content: Text(
-                                            'Phát âm: ${media.mediaType}',
+                                            'Pronunciation: ${media.mediaType}',
                                           ),
                                         ),
                                       );
@@ -613,7 +584,7 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Ghi chú',
+                                  'Note',
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     color: Colors.amber.shade700,
@@ -661,23 +632,45 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
   String _getPartOfSpeechName(String pos) {
     switch (pos) {
       case 'NOUN':
-        return 'Danh từ';
+        return 'Noun';
       case 'VERB':
-        return 'Động từ';
+        return 'Verb';
       case 'ADJ':
-        return 'Tính từ';
+        return 'Adjective';
       case 'ADV':
-        return 'Trạng từ';
+        return 'Adverb';
       case 'PRON':
-        return 'Đại từ';
+        return 'Pronoun';
       case 'PREP':
-        return 'Giới từ';
+        return 'Preposition';
       case 'CONJ':
-        return 'Liên từ';
+        return 'Conjunction';
       case 'INTERJ':
-        return 'Thán từ';
+        return 'Interjection';
       default:
         return pos;
     }
+  }
+
+  Widget _buildSpeakButton({required String text, String? languageCode}) {
+    final isCurrent = _isSpeaking && _currentSpeakingText == text;
+    return GestureDetector(
+      onTap: () => _speak(text, languageCode: languageCode),
+      child: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          color: isCurrent
+              ? _primaryBlue.withValues(alpha: 0.18)
+              : Colors.grey.shade100,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          isCurrent ? Icons.stop_circle_outlined : Icons.volume_up_outlined,
+          size: 17,
+          color: isCurrent ? _primaryBlue : Colors.grey.shade700,
+        ),
+      ),
+    );
   }
 }

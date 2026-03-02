@@ -4,6 +4,7 @@ import 'package:flip_card/flip_card.dart';
 import '../../data/models/learning_card.dart';
 import '../../data/services/learning_service.dart';
 import '../../config/routes/route_names.dart';
+import '../../core/tts/tts_utils.dart';
 
 class FlashcardScreen extends StatefulWidget {
   final LearningSet learningSet;
@@ -11,11 +12,11 @@ class FlashcardScreen extends StatefulWidget {
   final int? syllabusId;
 
   const FlashcardScreen({
-    Key? key,
     required this.learningSet,
     required this.courseTitle,
     this.syllabusId,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   State<FlashcardScreen> createState() => _FlashcardScreenState();
@@ -38,7 +39,6 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
     _cards = widget.learningSet.cards;
     _learnedVocabIds = [];
     _cardKeys = List.generate(_cards.length, (_) => GlobalKey<FlipCardState>());
-    _tts.setLanguage('ja-JP');
   }
 
   @override
@@ -47,16 +47,53 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
     super.dispose();
   }
 
-  /// Phát âm tiếng Nhật
-  Future<void> _speakJapanese(String text) async {
-    await _tts.setLanguage('ja-JP');
+  Future<void> _speakText(
+    String text, {
+    String? languageCode,
+    String? scriptType,
+  }) async {
+    if (text.trim().isEmpty) return;
+    final locale = TtsUtils.resolveLocale(
+      languageCode: languageCode,
+      scriptType: scriptType,
+      text: text,
+    );
+    final ready = await TtsUtils.prepareLanguage(
+      tts: _tts,
+      context: context,
+      locale: locale,
+    );
+    if (!ready) return;
     await _tts.speak(text);
   }
 
-  /// Phát âm tiếng Anh
-  Future<void> _speakEnglish(String text) async {
-    await _tts.setLanguage('en-US');
-    await _tts.speak(text);
+  Future<void> _speakTerm(LearningVocab vocab) async {
+    final term = _primaryTerm(vocab);
+    await _speakText(
+      vocab.mainTerm,
+      languageCode: term?.languageCode,
+      scriptType: term?.scriptType,
+    );
+  }
+
+  Future<void> _speakMeaning(LearningVocab vocab) async {
+    final langCode = vocab.meanings.isNotEmpty
+        ? vocab.meanings.first.languageCode
+        : 'en';
+    await _speakText(vocab.mainMeaning, languageCode: langCode);
+  }
+
+  VocabTerm? _primaryTerm(LearningVocab vocab) {
+    if (vocab.terms.isEmpty) return null;
+    for (final term in vocab.terms) {
+      if (term.textValue == vocab.mainTerm) return term;
+    }
+    return vocab.terms.first;
+  }
+
+  VocabMeaning? _primaryMeaning(LearningVocab vocab) {
+    if (vocab.meanings.isEmpty) return null;
+    return vocab.meanings.first;
   }
 
   void _onFlip(bool isFront) {
@@ -74,7 +111,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
   void _showFlipFirstSnack() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Hãy lật thẻ trước!'),
+        content: Text('Please flip the card first!'),
         duration: Duration(seconds: 1),
       ),
     );
@@ -118,7 +155,10 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Lỗi kết nối'), backgroundColor: Colors.red),
+      const SnackBar(
+        content: Text('Connection error'),
+        backgroundColor: Colors.red,
+      ),
     );
     return false;
   }
@@ -135,7 +175,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Đã lưu ${_learnedVocabIds.length} từ đã học'),
+          content: Text('Saved ${_learnedVocabIds.length} learned words'),
           backgroundColor: Colors.green.shade700,
         ),
       );
@@ -155,12 +195,12 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
             const Icon(Icons.celebration, size: 64, color: Colors.amber),
             const SizedBox(height: 16),
             const Text(
-              'Chúc mừng!',
+              'Congratulations!',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              'Bạn đã học xong ${_learnedVocabIds.length} từ!',
+              'You have finished ${_learnedVocabIds.length} words!',
               style: TextStyle(color: Colors.grey.shade600),
             ),
           ],
@@ -174,7 +214,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
                 context,
               ).pushNamedAndRemoveUntil(RouteNames.home, (route) => false);
             },
-            child: const Text('Về trang chủ'),
+            child: const Text('Go to home'),
           ),
         ],
       ),
@@ -186,7 +226,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
     if (_cards.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('Flashcard')),
-        body: const Center(child: Text('Không có từ vựng')),
+        body: const Center(child: Text('No vocabulary available')),
       );
     }
 
@@ -195,10 +235,11 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
     final isLast = _currentIndex == _cards.length - 1;
     final h = MediaQuery.of(context).size.height;
 
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
         _confirmExit();
-        return false;
       },
       child: Scaffold(
         backgroundColor: Colors.grey.shade100,
@@ -319,7 +360,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
         ],
         const SizedBox(height: 20),
         GestureDetector(
-          onTap: () => _speakJapanese(v.mainTerm),
+          onTap: () => _speakTerm(v),
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -331,7 +372,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
         ),
         const Spacer(),
         Text(
-          'Chạm để lật',
+          'Tap to flip',
           style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
         ),
         const SizedBox(height: 12),
@@ -340,74 +381,166 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
   );
 
   Widget _back(LearningVocab v) => _cardBox(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (v.imageUrl != null && v.imageUrl!.isNotEmpty)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              v.imageUrl!,
-              height: 80,
-              width: 80,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Icon(
-                Icons.image_outlined,
-                size: 40,
-                color: Colors.grey.shade400,
+    child: Builder(
+      builder: (context) {
+        final meaning = _primaryMeaning(v);
+        final exampleSentence = meaning?.exampleSentence?.trim() ?? '';
+        final exampleTranslation = meaning?.exampleTranslation?.trim() ?? '';
+
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              if (v.imageUrl != null && v.imageUrl!.isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    v.imageUrl!,
+                    height: 80,
+                    width: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Icon(
+                      Icons.image_outlined,
+                      size: 40,
+                      color: Colors.grey.shade400,
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      v.mainMeaning,
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _speakButton(
+                    onTap: () => _speakMeaning(v),
+                    color: Colors.green,
+                  ),
+                ],
               ),
-            ),
-          ),
-        const SizedBox(height: 16),
-        Text(
-          v.mainMeaning,
-          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 16),
-        // Text-to-speech cho nghĩa tiếng Anh
-        GestureDetector(
-          onTap: () => _speakEnglish(v.mainMeaning),
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.green.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.volume_up,
-              color: Colors.green.shade700,
-              size: 24,
-            ),
-          ),
-        ),
-        if (v.meanings.isNotEmpty &&
-            v.meanings.first.partOfSpeech.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.green.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              v.meanings.first.partOfSpeech,
-              style: TextStyle(
-                color: Colors.green.shade700,
-                fontWeight: FontWeight.w500,
+              if (exampleSentence.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                _exampleBox(
+                  label: 'Example sentence',
+                  text: exampleSentence,
+                  onSpeak: () => _speakText(
+                    exampleSentence,
+                    languageCode: meaning?.languageCode,
+                  ),
+                ),
+              ],
+              if (exampleTranslation.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                _exampleBox(
+                  label: 'Example translation',
+                  text: exampleTranslation,
+                  onSpeak: () => _speakText(exampleTranslation),
+                ),
+              ],
+              if (meaning != null && meaning.partOfSpeech.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    meaning.partOfSpeech,
+                    style: TextStyle(
+                      color: Colors.green.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 14),
+              Text(
+                'Tap to flip back',
+                style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
               ),
+              const SizedBox(height: 4),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+
+  Widget _speakButton({
+    required VoidCallback onTap,
+    required Color color,
+    double iconSize = 20,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(Icons.volume_up, color: color, size: iconSize),
+      ),
+    );
+  }
+
+  Widget _exampleBox({
+    required String label,
+    required String text,
+    required VoidCallback onSpeak,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F7FF),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE4E9FF)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.grey.shade700,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              _speakButton(onTap: onSpeak, color: _blue, iconSize: 18),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade900,
+              fontStyle: label == 'Example sentence'
+                  ? FontStyle.italic
+                  : FontStyle.normal,
             ),
           ),
         ],
-        const Spacer(),
-        Text(
-          'Chạm để lật lại',
-          style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
-        ),
-        const SizedBox(height: 12),
-      ],
-    ),
-  );
+      ),
+    );
+  }
 
   Widget _cardBox({required Widget child}) => Container(
     width: double.infinity,
@@ -456,7 +589,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
       children: [
         Expanded(
           child: _navBtn(
-            'Trước',
+            'Previous',
             Icons.arrow_back,
             _currentIndex > 0 && !_isCompleting,
             _prev,
@@ -466,7 +599,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
         Expanded(
           flex: 2,
           child: _navBtn(
-            isLast ? 'Hoàn thành' : 'Tiếp theo',
+            isLast ? 'Finish' : 'Next',
             isLast ? Icons.check : Icons.arrow_forward,
             _canNavigateFromCurrent && !_isCompleting,
             () {
@@ -544,23 +677,23 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Dừng học?'),
+        title: const Text('Stop learning?'),
         content: Text(
           _learnedVocabIds.isEmpty
-              ? 'Bạn chưa học từ nào. Bạn muốn thoát không?'
-              : 'Bạn đã học ${_learnedVocabIds.length} từ. Bạn muốn lưu tiến độ trước khi thoát không?',
+              ? 'You have not learned any words yet. Exit now?'
+              : 'You learned ${_learnedVocabIds.length} words. Save progress before exiting?',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Tiếp tục học'),
+            child: const Text('Continue'),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               Navigator.pop(context);
             },
-            child: const Text('Thoát', style: TextStyle(color: Colors.red)),
+            child: const Text('Exit', style: TextStyle(color: Colors.red)),
           ),
           if (_learnedVocabIds.isNotEmpty)
             FilledButton(
@@ -568,7 +701,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
                 Navigator.pop(context);
                 _saveProgressAndExit();
               },
-              child: const Text('Lưu & thoát'),
+              child: const Text('Save & exit'),
             ),
         ],
       ),

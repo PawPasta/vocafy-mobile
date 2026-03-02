@@ -7,7 +7,7 @@ import '../../data/services/auth_service.dart';
 import '../../assets/app_remote_images.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   Widget _label(String text) =>
       Text(text, style: const TextStyle(fontWeight: FontWeight.w600));
@@ -38,6 +38,12 @@ class ProfileScreen extends StatelessWidget {
                     horizontal: 12,
                     vertical: 8,
                   ),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF5A4BFF),
+                    borderRadius: BorderRadius.vertical(
+                      bottom: Radius.circular(18),
+                    ),
+                  ),
                   child: Row(
                     children: [
                       IconButton(
@@ -62,18 +68,18 @@ class ProfileScreen extends StatelessWidget {
                           final ok = await showDialog<bool>(
                             context: context,
                             builder: (ctx) => AlertDialog(
-                              title: const Text('Đăng xuất'),
+                              title: const Text('Sign out'),
                               content: const Text(
-                                'Bạn có chắc muốn đăng xuất không?',
+                                'Are you sure you want to sign out?',
                               ),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.of(ctx).pop(false),
-                                  child: const Text('Hủy'),
+                                  child: const Text('Cancel'),
                                 ),
                                 TextButton(
                                   onPressed: () => Navigator.of(ctx).pop(true),
-                                  child: const Text('Đăng xuất'),
+                                  child: const Text('Sign out'),
                                 ),
                               ],
                             ),
@@ -89,12 +95,6 @@ class ProfileScreen extends StatelessWidget {
                         },
                       ),
                     ],
-                  ),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF5A4BFF),
-                    borderRadius: BorderRadius.vertical(
-                      bottom: Radius.circular(18),
-                    ),
                   ),
                 ),
 
@@ -128,35 +128,43 @@ class ProfileScreen extends StatelessWidget {
                           // Upgrade box above Full name (right-aligned)
                           Align(
                             alignment: Alignment.centerRight,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF5A4BFF),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: const Color(0xFF4639E6),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(10),
+                              onTap: () {
+                                Navigator.of(
+                                  context,
+                                ).pushNamed(RouteNames.premiumPackages);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
                                 ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: const [
-                                  Icon(
-                                    Icons.star,
-                                    color: Colors.white,
-                                    size: 18,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF5A4BFF),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: const Color(0xFF4639E6),
                                   ),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Upgrade',
-                                    style: TextStyle(
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    Icon(
+                                      Icons.workspace_premium,
                                       color: Colors.white,
-                                      fontWeight: FontWeight.w600,
+                                      size: 18,
                                     ),
-                                  ),
-                                ],
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Get PLUS',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
