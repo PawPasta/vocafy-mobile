@@ -51,6 +51,7 @@ class Api {
 
   // ==================== Premium Endpoints ====================
   static const String premiumPackages = '/premium-packages';
+  static const String subscriptionsMe = '/subscriptions/me';
 
   // ==================== Payment Endpoints ====================
   static const String paymentsSubscribe = '/payments/subscribe';

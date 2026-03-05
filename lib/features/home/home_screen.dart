@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../assets/app_remote_images.dart';
 import '../../core/api/api_client.dart';
@@ -6,8 +7,10 @@ import '../../core/api/api_endpoints.dart';
 import '../../data/models/category.dart';
 import '../../data/models/syllabus.dart';
 import '../../data/models/enrollment.dart';
+import '../../data/models/subscription_info.dart';
 import '../../data/services/category_service.dart';
 import '../../data/services/enrollment_service.dart';
+import '../../data/services/premium_service.dart';
 import '../../config/routes/route_names.dart';
 import '../../data/services/syllabus_service.dart';
 import '../syllabus/syllabus_detail_screen.dart';
@@ -23,6 +26,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   late final Future<_ProfileData> _profileFuture;
+  late final Future<SubscriptionInfo> _subscriptionFuture;
   late final Future<List<Syllabus>> _trialSyllabiFuture;
   late final Future<List<AppCategory>> _categoriesFuture;
   late final Future<List<Enrollment>> _enrollmentsFuture;
@@ -59,6 +63,12 @@ class _HomeScreenState extends State<HomeScreen>
     );
 
     _profileFuture = _fetchProfile();
+    _subscriptionFuture = premiumService
+        .getMySubscription()
+        .timeout(
+          const Duration(seconds: 10),
+          onTimeout: () => SubscriptionInfo.free,
+        );
     _trialSyllabiFuture = syllabusService
         .listSyllabi(page: 0, size: 10)
         .timeout(
@@ -245,8 +255,139 @@ class _HomeScreenState extends State<HomeScreen>
                 ],
               ),
               const SizedBox(height: 14),
-              _buildGetPlusButton(context),
+              FutureBuilder<SubscriptionInfo>(
+                future: _subscriptionFuture,
+                builder: (context, subscriptionSnapshot) {
+                  if (subscriptionSnapshot.connectionState ==
+                          ConnectionState.waiting &&
+                      !subscriptionSnapshot.hasData) {
+                    return const SizedBox(
+                      height: 50,
+                      child: Center(
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                  final subscription =
+                      subscriptionSnapshot.data ?? SubscriptionInfo.free;
+                  if (subscription.isVip) {
+                    return _buildVipWelcomeLabel();
+                  }
+                  return _buildGetPlusButton(context);
+                },
+              ),
             ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildVipWelcomeLabel() {
+    return AnimatedBuilder(
+      animation: _plusGlow,
+      builder: (context, child) {
+        final t = _plusGlow.value;
+        final sparkle = 0.5 + (0.5 * math.sin(t * math.pi * 2));
+
+        return Transform.scale(
+          scale: 1 + (0.015 * t),
+          child: Container(
+            height: 58,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF302100), Color(0xFFB67A00), Color(0xFF2F1E00)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.amberAccent.withValues(alpha: 0.6 + (0.2 * t)),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(
+                    0xFFFFC84D,
+                  ).withValues(alpha: 0.22 + (0.24 * sparkle)),
+                  blurRadius: 16 + (14 * sparkle),
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Align(
+                      alignment: Alignment(-1.8 + (3.6 * t), 0),
+                      child: Container(
+                        width: 84,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.white.withValues(alpha: 0),
+                              Colors.white.withValues(alpha: 0.3),
+                              Colors.white.withValues(alpha: 0),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 12,
+                    top: 7 - (2 * sparkle),
+                    child: Icon(
+                      Icons.celebration,
+                      color: Colors.amberAccent.withValues(
+                        alpha: 0.85 + (0.15 * sparkle),
+                      ),
+                      size: 18 + (2 * sparkle),
+                    ),
+                  ),
+                  Positioned(
+                    right: 14,
+                    bottom: 8 - (2 * sparkle),
+                    child: Icon(
+                      Icons.auto_awesome,
+                      color: Colors.amberAccent.withValues(
+                        alpha: 0.82 + (0.18 * sparkle),
+                      ),
+                      size: 18 + (2 * sparkle),
+                    ),
+                  ),
+                  Center(
+                    child: Text(
+                      'WELCOME VIP MEMBER',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.95),
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.8,
+                        fontSize: 14 + (0.4 * sparkle),
+                        shadows: [
+                          Shadow(
+                            color: Colors.amberAccent.withValues(
+                              alpha: 0.42 + (0.2 * sparkle),
+                            ),
+                            blurRadius: 8 + (4 * sparkle),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         );
       },

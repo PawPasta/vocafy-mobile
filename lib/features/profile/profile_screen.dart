@@ -1,16 +1,203 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/api/user_service.dart';
 import '../../core/models/user_model.dart';
 import '../../config/routes/route_names.dart';
 import '../../data/services/auth_service.dart';
+import '../../data/services/premium_service.dart';
+import '../../data/models/subscription_info.dart';
 import '../../assets/app_remote_images.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen>
+    with SingleTickerProviderStateMixin {
+  late final Future<SubscriptionInfo> _subscriptionFuture;
+  late final AnimationController _vipBadgeController;
+  late final Animation<double> _vipGlow;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscriptionFuture = premiumService.getMySubscription().timeout(
+      const Duration(seconds: 10),
+      onTimeout: () => SubscriptionInfo.free,
+    );
+    _vipBadgeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1900),
+    )..repeat(reverse: true);
+    _vipGlow = CurvedAnimation(
+      parent: _vipBadgeController,
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  void dispose() {
+    _vipBadgeController.dispose();
+    super.dispose();
+  }
 
   Widget _label(String text) =>
       Text(text, style: const TextStyle(fontWeight: FontWeight.w600));
+
+  Widget _buildSubscriptionBadge(BuildContext context) {
+    return FutureBuilder<SubscriptionInfo>(
+      future: _subscriptionFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return Container(
+            width: 126,
+            height: 38,
+            decoration: BoxDecoration(
+              color: const Color(0xFF5A4BFF),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFF4639E6)),
+            ),
+            child: const Center(
+              child: SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          );
+        }
+
+        final subscription = snapshot.data ?? SubscriptionInfo.free;
+        if (subscription.isVip) {
+          return _buildVipWelcomeBadge();
+        }
+        return _buildGetPlusBadge(context);
+      },
+    );
+  }
+
+  Widget _buildGetPlusBadge(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: () => Navigator.of(context).pushNamed(RouteNames.premiumPackages),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF5A4BFF),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFF4639E6)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.workspace_premium, color: Colors.white, size: 18),
+            SizedBox(width: 8),
+            Text(
+              'Get PLUS',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVipWelcomeBadge() {
+    return AnimatedBuilder(
+      animation: _vipGlow,
+      builder: (context, child) {
+        final t = _vipGlow.value;
+        final sparkle = 0.5 + (0.5 * math.sin(t * math.pi * 2));
+        return Transform.scale(
+          scale: 1 + (0.015 * t),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF2F1F00),
+                  Color(0xFFC17B00),
+                  Color(0xFF2F1E00),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: Colors.amberAccent.withValues(alpha: 0.6 + (0.2 * t)),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(
+                    0xFFFFCB5A,
+                  ).withValues(alpha: 0.18 + (0.24 * sparkle)),
+                  blurRadius: 12 + (8 * sparkle),
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Positioned(
+                  left: 0,
+                  child: Icon(
+                    Icons.celebration,
+                    size: 16 + (2 * sparkle),
+                    color: Colors.amberAccent.withValues(
+                      alpha: 0.84 + (0.16 * sparkle),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Text(
+                    'VIP MEMBER',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12.5 + (0.4 * sparkle),
+                      letterSpacing: 0.6,
+                      shadows: [
+                        Shadow(
+                          color: Colors.amberAccent.withValues(
+                            alpha: 0.4 + (0.2 * sparkle),
+                          ),
+                          blurRadius: 7 + (3 * sparkle),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 0,
+                  child: Icon(
+                    Icons.auto_awesome,
+                    size: 16 + (2 * sparkle),
+                    color: Colors.amberAccent.withValues(
+                      alpha: 0.84 + (0.16 * sparkle),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -128,45 +315,7 @@ class ProfileScreen extends StatelessWidget {
                           // Upgrade box above Full name (right-aligned)
                           Align(
                             alignment: Alignment.centerRight,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(10),
-                              onTap: () {
-                                Navigator.of(
-                                  context,
-                                ).pushNamed(RouteNames.premiumPackages);
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF5A4BFF),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: const Color(0xFF4639E6),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: const [
-                                    Icon(
-                                      Icons.workspace_premium,
-                                      color: Colors.white,
-                                      size: 18,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      'Get PLUS',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                            child: _buildSubscriptionBadge(context),
                           ),
                           const SizedBox(height: 12),
                           // Full name label on its own row, box + name on the row below
