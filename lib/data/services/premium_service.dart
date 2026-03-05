@@ -8,6 +8,7 @@ import '../models/payment_check_result.dart';
 import '../models/payment_subscribe_result.dart';
 import '../models/page_response.dart';
 import '../models/premium_package.dart';
+import '../models/subscription_info.dart';
 
 class PremiumService {
   static final PremiumService _instance = PremiumService._();
@@ -127,6 +128,28 @@ class PremiumService {
         print('❌ checkPaymentTransaction error: $e');
       }
       return null;
+    }
+  }
+
+  Future<SubscriptionInfo> getMySubscription() async {
+    try {
+      final response = await api.get(Api.subscriptionsMe);
+      final data = response.data;
+      if (data is! Map<String, dynamic>) return SubscriptionInfo.free;
+
+      final parsed = ApiResponse<SubscriptionInfo>.fromJson(
+        data,
+        (json) => json is Map<String, dynamic>
+            ? SubscriptionInfo.fromJson(json)
+            : SubscriptionInfo.free,
+      );
+
+      return parsed.result ?? SubscriptionInfo.free;
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ getMySubscription error: $e');
+      }
+      return SubscriptionInfo.free;
     }
   }
 }
