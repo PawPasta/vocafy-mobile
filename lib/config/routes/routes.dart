@@ -11,6 +11,7 @@ import '../../features/course/course_detail_screen.dart';
 import '../../features/vocabulary/vocabulary_detail_screen.dart';
 import '../../features/vocabulary/my_vocabulary_screen.dart';
 import '../../features/enrollments/enrollments_screen.dart';
+import '../../features/feedback/feedback_screen.dart';
 import 'route_names.dart';
 
 /// Main app routes configuration
@@ -77,6 +78,9 @@ class AppRoutes {
 
       case RouteNames.myVocabulary:
         return _buildRoute(const MyVocabularyScreen());
+
+      case RouteNames.feedback:
+        return _buildRoute(const FeedbackScreen());
 
       case RouteNames.enrollments:
         return _buildRoute(const EnrollmentsScreen());

@@ -63,12 +63,10 @@ class _HomeScreenState extends State<HomeScreen>
     );
 
     _profileFuture = _fetchProfile();
-    _subscriptionFuture = premiumService
-        .getMySubscription()
-        .timeout(
-          const Duration(seconds: 10),
-          onTimeout: () => SubscriptionInfo.free,
-        );
+    _subscriptionFuture = premiumService.getMySubscription().timeout(
+      const Duration(seconds: 10),
+      onTimeout: () => SubscriptionInfo.free,
+    );
     _trialSyllabiFuture = syllabusService
         .listSyllabi(page: 0, size: 10)
         .timeout(
@@ -304,7 +302,11 @@ class _HomeScreenState extends State<HomeScreen>
             width: double.infinity,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF302100), Color(0xFFB67A00), Color(0xFF2F1E00)],
+                colors: [
+                  Color(0xFF302100),
+                  Color(0xFFB67A00),
+                  Color(0xFF2F1E00),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -1089,9 +1091,14 @@ class _HomeScreenState extends State<HomeScreen>
                 index: 3,
               ),
               _buildBottomItem(
+                icon: Icons.rate_review_outlined,
+                label: 'Feedback',
+                index: 4,
+              ),
+              _buildBottomItem(
                 icon: Icons.person_outline,
                 label: 'Profile',
-                index: 4,
+                index: 5,
               ),
             ],
           ),
@@ -1118,6 +1125,8 @@ class _HomeScreenState extends State<HomeScreen>
         } else if (index == 3) {
           Navigator.of(context).pushNamed(RouteNames.myVocabulary);
         } else if (index == 4) {
+          Navigator.of(context).pushNamed(RouteNames.feedback);
+        } else if (index == 5) {
           Navigator.of(context).pushNamed(RouteNames.profile);
         } else if (index != 0) {
           _showComingSoon(label);

@@ -56,4 +56,7 @@ class Api {
   // ==================== Payment Endpoints ====================
   static const String paymentsSubscribe = '/payments/subscribe';
   static const String paymentsCheckTransaction = '/payments/check-transaction';
+
+  // ==================== Feedback Endpoints ====================
+  static const String feedbacks = '/feedbacks';
 }
