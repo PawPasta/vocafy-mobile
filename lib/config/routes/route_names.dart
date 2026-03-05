@@ -17,6 +17,7 @@ class RouteNames {
   static const String courseDetail = '/course/detail';
   static const String vocabularyDetail = '/vocabulary/detail';
   static const String myVocabulary = '/vocabulary/me';
+  static const String feedback = '/feedback';
 
   // Enrollments
   static const String enrollments = '/enrollments';

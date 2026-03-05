@@ -292,6 +292,14 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
                 onTap: () {},
               ),
               _buildBottomItem(
+                icon: Icons.rate_review_outlined,
+                label: 'Feedback',
+                isActive: false,
+                onTap: () {
+                  Navigator.of(context).pushNamed(RouteNames.feedback);
+                },
+              ),
+              _buildBottomItem(
                 icon: Icons.person_outline,
                 label: 'Profile',
                 isActive: false,
