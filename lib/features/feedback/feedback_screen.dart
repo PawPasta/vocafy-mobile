@@ -68,15 +68,15 @@ class _FeedbackScreenState extends State<FeedbackScreen>
                   _FeedbackListSection(
                     key: _myFeedbacksKey,
                     mineOnly: true,
-                    emptyTitle: 'Bạn chưa gửi feedback nào',
-                    emptySubtitle: 'Nhấn nút Feedback để thêm đánh giá mới.',
+                    emptyTitle: 'You have not submitted any feedback yet',
+                    emptySubtitle: 'Tap the Feedback button to add a new review.',
                   ),
                   _FeedbackListSection(
                     key: _allFeedbacksKey,
                     mineOnly: false,
-                    emptyTitle: 'Chưa có feedback nào',
+                    emptyTitle: 'No feedback yet',
                     emptySubtitle:
-                        'Danh sách sẽ hiển thị khi có người dùng gửi.',
+                        'The list will appear when users submit feedback.',
                   ),
                 ],
               ),
@@ -142,7 +142,7 @@ class _FeedbackScreenState extends State<FeedbackScreen>
           ),
           const SizedBox(height: 10),
           Text(
-            'Theo dõi đánh giá và phản hồi từ admin theo dạng hội thoại.',
+            'Track ratings and admin replies in a conversation view.',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.9),
               fontSize: 13.5,
@@ -172,8 +172,8 @@ class _FeedbackScreenState extends State<FeedbackScreen>
         labelColor: Colors.white,
         unselectedLabelColor: const Color(0xFF1F2937),
         tabs: const [
-          Tab(text: 'Của tôi'),
-          Tab(text: 'Tất cả'),
+          Tab(text: 'Mine'),
+          Tab(text: 'All'),
         ],
       ),
     );
@@ -333,7 +333,7 @@ class _CreateFeedbackSheetState extends State<_CreateFeedbackSheet> {
     if (title.isEmpty || content.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Vui lòng nhập đầy đủ tiêu đề và nội dung.'),
+          content: Text('Please enter both title and content.'),
         ),
       );
       return;
@@ -394,12 +394,12 @@ class _CreateFeedbackSheetState extends State<_CreateFeedbackSheet> {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'Thêm feedback',
+                  'Add feedback',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 6),
                 const Text(
-                  'Đánh giá app và gửi góp ý để team cải thiện.',
+                  'Rate the app and share suggestions so the team can improve.',
                   style: TextStyle(color: Color(0xFF6B7280), fontSize: 13.5),
                 ),
                 const SizedBox(height: 16),
@@ -431,8 +431,8 @@ class _CreateFeedbackSheetState extends State<_CreateFeedbackSheet> {
                   enabled: !_submitting,
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
-                    labelText: 'Tiêu đề',
-                    hintText: 'Ví dụ: APP CẦN CHI TIẾT HƠN',
+                    labelText: 'Title',
+                    hintText: 'Example: THE APP NEEDS MORE DETAIL',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -445,8 +445,8 @@ class _CreateFeedbackSheetState extends State<_CreateFeedbackSheet> {
                   minLines: 4,
                   maxLines: 6,
                   decoration: InputDecoration(
-                    labelText: 'Nội dung',
-                    hintText: 'Mô tả góp ý cụ thể của bạn...',
+                    labelText: 'Content',
+                    hintText: 'Describe your feedback in detail...',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -475,7 +475,7 @@ class _CreateFeedbackSheetState extends State<_CreateFeedbackSheet> {
                             ),
                           )
                         : const Icon(Icons.send_rounded),
-                    label: Text(_submitting ? 'Đang gửi...' : 'Gửi feedback'),
+                    label: Text(_submitting ? 'Submitting...' : 'Submit feedback'),
                   ),
                 ),
               ],
@@ -719,7 +719,7 @@ class _FeedbackThreadCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             item.title.isEmpty
-                                ? 'Không có tiêu đề'
+                                ? 'No title'
                                 : item.title,
                             style: const TextStyle(
                               color: Color(0xFF1F2937),
@@ -814,7 +814,7 @@ class _FeedbackThreadCard extends StatelessWidget {
               child: Padding(
                 padding: EdgeInsets.only(left: 2),
                 child: Text(
-                  'Admin chưa phản hồi',
+                  'No admin reply yet',
                   style: TextStyle(
                     color: Color(0xFF9CA3AF),
                     fontSize: 12,
