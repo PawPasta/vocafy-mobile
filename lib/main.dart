@@ -5,9 +5,9 @@ import 'firebase_options.dart';
 import 'config/routes/routes.dart';
 import 'config/routes/route_names.dart';
 
-import 'core/api/api_client.dart';
-import 'core/navigation/app_navigation_service.dart';
-import 'core/notifications/notification_service.dart';
+import 'core/data/network/api_client.dart';
+import 'config/navigation/app_navigation_service.dart';
+import 'core/integration/notifications/notification_service.dart';
 import 'core/storage/token_storage.dart';
 
 final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =

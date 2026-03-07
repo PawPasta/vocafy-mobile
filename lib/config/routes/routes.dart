@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import '../../features/splash/splash_screen.dart';
-import '../../features/onboarding/onboarding_screen.dart';
-import '../../features/auth/login/login_screen.dart';
-import '../../features/home/home_screen.dart';
-import '../../features/profile/profile_screen.dart';
-import '../../features/premium/premium_packages_screen.dart';
-import '../../features/syllabus/syllabus_detail_screen.dart';
-import '../../features/topic/topic_detail_screen.dart';
-import '../../features/course/course_detail_screen.dart';
-import '../../features/vocabulary/vocabulary_detail_screen.dart';
-import '../../features/vocabulary/my_vocabulary_screen.dart';
-import '../../features/enrollments/enrollments_screen.dart';
-import '../../features/feedback/feedback_screen.dart';
+import '../../screen/splash/splash_screen.dart';
+import '../../screen/onboarding/onboarding_screen.dart';
+import '../../screen/auth/login/login_screen.dart';
+import '../../screen/home/home_screen.dart';
+import '../../screen/profile/profile_screen.dart';
+import '../../screen/premium/premium_packages_screen.dart';
+import '../../screen/syllabus/syllabus_detail_screen.dart';
+import '../../screen/topic/topic_detail_screen.dart';
+import '../../screen/course/course_detail_screen.dart';
+import '../../screen/vocabulary/vocabulary_detail_screen.dart';
+import '../../screen/vocabulary/my_vocabulary_screen.dart';
+import '../../screen/enrollments/enrollments_screen.dart';
+import '../../screen/feedback/feedback_screen.dart';
 import 'route_names.dart';
 
 /// Main app routes configuration
