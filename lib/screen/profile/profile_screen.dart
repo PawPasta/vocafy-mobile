@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/data/services/user_service.dart';
 import '../../core/data/models/user_model.dart';
+import '../../core/data/network/api_error_utils.dart';
 import '../../config/routes/route_names.dart';
 import '../../core/data/services/auth_service.dart';
 import '../../core/data/services/premium_service.dart';
@@ -212,7 +213,15 @@ class _ProfileScreenState extends State<ProfileScreen>
             }
 
             if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
+              final error = snapshot.error;
+              final message = error is Object
+                  ? preferredUserErrorMessage(
+                      error,
+                      suppressFirebaseOrProvider: false,
+                      fallback: 'Unable to load profile.',
+                    )
+                  : 'Unable to load profile.';
+              return Center(child: Text(message ?? 'Unable to load profile.'));
             }
 
             final user = snapshot.data;

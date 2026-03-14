@@ -1,4 +1,5 @@
 import '../network/api_client.dart';
+import '../network/api_error_utils.dart';
 import '../models/quiz_question.dart';
 
 class QuizService {
@@ -6,8 +7,12 @@ class QuizService {
   static final QuizService _instance = QuizService._();
   static QuizService get instance => _instance;
 
+  String? _lastErrorMessage;
+  String? get lastErrorMessage => _lastErrorMessage;
+
   /// Lấy danh sách câu hỏi từ từ vựng đã học
   Future<List<QuizQuestion>> getLearnedQuestions() async {
+    _lastErrorMessage = null;
     try {
       final response = await api.get('/vocabulary-questions/learned');
       final data = response.data;
@@ -20,6 +25,10 @@ class QuizService {
       }
       return [];
     } catch (e) {
+      _lastErrorMessage = preferredUserErrorMessage(
+        e,
+        suppressFirebaseOrProvider: false,
+      );
       return [];
     }
   }
@@ -32,6 +41,7 @@ class QuizService {
     required int refId,
     required int answerId,
   }) async {
+    _lastErrorMessage = null;
     try {
       final response = await api.post('/learning-progress/answer', {
         'question_type': questionType,
@@ -48,6 +58,10 @@ class QuizService {
       }
       return null;
     } catch (e) {
+      _lastErrorMessage = preferredUserErrorMessage(
+        e,
+        suppressFirebaseOrProvider: false,
+      );
       return null;
     }
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../network/api_client.dart';
+import '../network/api_error_utils.dart';
 import '../network/api_endpoints.dart';
 import '../models/topic.dart';
 
@@ -10,8 +11,12 @@ class TopicService {
 
   TopicService._();
 
+  String? _lastErrorMessage;
+  String? get lastErrorMessage => _lastErrorMessage;
+
   /// Get topic by ID
   Future<Topic?> getTopicById(int id) async {
+    _lastErrorMessage = null;
     try {
       final response = await api.get('${Api.topics}/$id');
       final data = response.data;
@@ -19,6 +24,10 @@ class TopicService {
         return Topic.fromJson(data['result'] as Map<String, dynamic>);
       }
     } catch (e) {
+      _lastErrorMessage = preferredUserErrorMessage(
+        e,
+        suppressFirebaseOrProvider: false,
+      );
       if (kDebugMode) print('❌ getTopicById error: $e');
     }
     return null;
@@ -26,6 +35,7 @@ class TopicService {
 
   /// List topics by syllabus ID
   Future<List<Topic>> listTopicsBySyllabus(int syllabusId, {int page = 0, int size = 20}) async {
+    _lastErrorMessage = null;
     try {
       final response = await api.get(
         '${Api.topicsBySyllabus}/$syllabusId',
@@ -43,6 +53,10 @@ class TopicService {
         }
       }
     } catch (e) {
+      _lastErrorMessage = preferredUserErrorMessage(
+        e,
+        suppressFirebaseOrProvider: false,
+      );
       if (kDebugMode) print('❌ listTopicsBySyllabus error: $e');
     }
     return const <Topic>[];

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import '../models/user_model.dart';
 import '../network/api_endpoints.dart';
 import '../network/api_client.dart';
+import '../network/api_error_utils.dart';
 
 class UserService {
   /// Fetch current logged-in user: GET /users/me
@@ -16,6 +17,13 @@ class UserService {
       }
       return null;
     } catch (e) {
+      final message = preferredUserErrorMessage(
+        e,
+        suppressFirebaseOrProvider: false,
+      );
+      if (message != null && message.isNotEmpty) {
+        return Future.error(Exception(message));
+      }
       return Future.error(e);
     }
   }

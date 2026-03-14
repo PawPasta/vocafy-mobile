@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../network/api_client.dart';
+import '../network/api_error_utils.dart';
 import '../network/api_endpoints.dart';
 import '../models/api_response.dart';
 import '../models/page_response.dart';
@@ -12,7 +13,11 @@ class SyllabusService {
 
   SyllabusService._();
 
+  String? _lastErrorMessage;
+  String? get lastErrorMessage => _lastErrorMessage;
+
   Future<List<Syllabus>> listSyllabi({int page = 0, int size = 5}) async {
+    _lastErrorMessage = null;
     try {
       final response = await api.get(Api.syllabus, params: {
         'page': page,
@@ -45,6 +50,10 @@ class SyllabusService {
 
       return parsed.result?.content ?? const <Syllabus>[];
     } catch (e) {
+      _lastErrorMessage = preferredUserErrorMessage(
+        e,
+        suppressFirebaseOrProvider: false,
+      );
       if (kDebugMode) {
         print('❌ listSyllabi error: $e');
       }
@@ -53,6 +62,7 @@ class SyllabusService {
   }
 
   Future<Map<String, dynamic>?> getSyllabusById(int id) async {
+    _lastErrorMessage = null;
     try {
       final response = await api.get('${Api.syllabus}/$id');
       final data = response.data;
@@ -60,6 +70,10 @@ class SyllabusService {
         return data['result'] as Map<String, dynamic>;
       }
     } catch (e) {
+      _lastErrorMessage = preferredUserErrorMessage(
+        e,
+        suppressFirebaseOrProvider: false,
+      );
       if (kDebugMode) print('❌ getSyllabusById error: $e');
     }
     return null;

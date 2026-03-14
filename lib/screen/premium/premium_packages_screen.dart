@@ -19,6 +19,7 @@ class PremiumPackagesScreen extends StatefulWidget {
 }
 
 class _PremiumPackagesScreenState extends State<PremiumPackagesScreen> {
+  static const Color _softErrorOrange = Color(0xFFF4A261);
   late final Future<List<PremiumPackage>> _packagesFuture;
   final Map<int, PremiumPackage> _detailCache = <int, PremiumPackage>{};
   final NumberFormat _vndFormat = NumberFormat.currency(
@@ -90,9 +91,13 @@ class _PremiumPackagesScreenState extends State<PremiumPackagesScreen> {
     setState(() => _processingPayment = false);
 
     if (subscribe == null || subscribe.url.trim().isEmpty) {
+      final message =
+          premiumService.lastErrorMessage ??
+          'Khong tao duoc QR thanh toan. Vui long thu lai.';
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Khong tao duoc QR thanh toan. Vui long thu lai.'),
+        SnackBar(
+          content: Text(message),
+          backgroundColor: _softErrorOrange,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -505,6 +510,7 @@ class _PaymentQrSheet extends StatefulWidget {
 }
 
 class _PaymentQrSheetState extends State<_PaymentQrSheet> {
+  static const Color _softErrorOrange = Color(0xFFF4A261);
   final Dio _dio = Dio();
   bool _downloading = false;
   bool _checking = false;
@@ -587,7 +593,10 @@ class _PaymentQrSheetState extends State<_PaymentQrSheet> {
     });
 
     if (result == null) {
-      _showSnack('Khong kiem tra duoc giao dich. Vui long thu lai.');
+      final message =
+          premiumService.lastErrorMessage ??
+          'Khong kiem tra duoc giao dich. Vui long thu lai.';
+      _showSnack(message, backgroundColor: _softErrorOrange);
       return;
     }
 
@@ -601,10 +610,14 @@ class _PaymentQrSheetState extends State<_PaymentQrSheet> {
     );
   }
 
-  void _showSnack(String message) {
+  void _showSnack(String message, {Color? backgroundColor}) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: backgroundColor,
+      ),
     );
   }
 

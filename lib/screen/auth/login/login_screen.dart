@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import '../../../assets/app_remote_images.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../core/data/services/auth_service.dart';
+import '../../../core/data/network/api_client.dart';
 import '../../../config/routes/route_names.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -18,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   static const Color _primaryBlue = Color(0xFF5B7FFF);
   static const Color _primaryBlueDark = Color(0xFF4C6FFF);
   static const Color _pageBg = Colors.white;
+  static const Color _softErrorOrange = Color(0xFFF4A261);
 
   bool _isLoading = false;
 
@@ -50,17 +53,73 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } catch (e) {
       if (!mounted) return;
+      final errorMessage = _extractPreferredLoginErrorMessage(e);
+      if (errorMessage == null || errorMessage.isEmpty) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Login failed: ${e.toString().replaceAll('Exception: ', '')}',
-          ),
-          backgroundColor: Colors.red,
+          content: Text(errorMessage),
+          backgroundColor: _softErrorOrange,
         ),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  String? _extractPreferredLoginErrorMessage(Object error) {
+    // API errors: always prioritize server-provided message.
+    if (error is DioException) {
+      final apiMessage = _extractApiMessage(error);
+      if (apiMessage != null) return apiMessage;
+      if (_looksLikeDebugNoise(error.toString())) return null;
+      return 'Login failed. Please try again.';
+    }
+
+    // Keep current behavior for Firebase/Google integration issues: do not show.
+    if (_isFirebaseOrProviderError(error)) return null;
+
+    final raw = error.toString().replaceFirst('Exception: ', '').trim();
+    if (raw.isEmpty || _looksLikeDebugNoise(raw)) return null;
+    return raw;
+  }
+
+  String? _extractApiMessage(DioException error) {
+    final responseData = error.response?.data;
+    if (responseData is Map) {
+      final message = (responseData['message'] ??
+              responseData['error'] ??
+              responseData['detail'])
+          ?.toString()
+          .trim();
+      if (message != null && message.isNotEmpty) return message;
+    }
+
+    if (responseData is String && responseData.trim().isNotEmpty) {
+      return responseData.trim();
+    }
+
+    final wrapped = error.error;
+    if (wrapped is ApiServerException && wrapped.message.trim().isNotEmpty) {
+      return wrapped.message.trim();
+    }
+
+    return null;
+  }
+
+  bool _isFirebaseOrProviderError(Object error) {
+    final msg = error.toString().toLowerCase();
+    return msg.contains('firebase') ||
+        msg.contains('google_sign_in') ||
+        msg.contains('google sign in') ||
+        msg.contains('platformexception(sign_in') ||
+        msg.contains('com.google.android.gms');
+  }
+
+  bool _looksLikeDebugNoise(String value) {
+    final msg = value.toLowerCase();
+    return msg.contains('dioexception') ||
+        msg.contains('stacktrace') ||
+        msg.contains('debug');
   }
 
   @override

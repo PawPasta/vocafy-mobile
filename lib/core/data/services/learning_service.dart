@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../network/api_client.dart';
+import '../network/api_error_utils.dart';
 import '../network/api_endpoints.dart';
 import '../models/learning_card.dart';
 
@@ -10,6 +11,9 @@ class LearningService {
 
   LearningService._();
 
+  String? _lastErrorMessage;
+  String? get lastErrorMessage => _lastErrorMessage;
+
   /// Start learning and get learning cards
   /// Gọi POST /api/learning-sets để lấy cards.
   ///
@@ -18,6 +22,7 @@ class LearningService {
   ///
   /// Returns LearningSet with cards if successful, null otherwise
   Future<LearningSet?> startLearning({required int syllabusId}) async {
+    _lastErrorMessage = null;
     try {
       // Call learning-sets API
       final response = await api.post(Api.learningSets, {
@@ -41,6 +46,10 @@ class LearningService {
 
       return null;
     } catch (e) {
+      _lastErrorMessage = preferredUserErrorMessage(
+        e,
+        suppressFirebaseOrProvider: false,
+      );
       if (kDebugMode) {
         print('❌ startLearning error: $e');
       }
@@ -51,6 +60,7 @@ class LearningService {
   /// Complete learning for a list of vocabulary IDs
   /// POST /api/learning-sets/complete with { "vocab_ids": [...] }
   Future<bool> completeLearning(List<int> vocabIds) async {
+    _lastErrorMessage = null;
     try {
       final response = await api.post('${Api.learningSets}/complete', {
         'vocab_ids': vocabIds,
@@ -65,6 +75,10 @@ class LearningService {
 
       return success;
     } catch (e) {
+      _lastErrorMessage = preferredUserErrorMessage(
+        e,
+        suppressFirebaseOrProvider: false,
+      );
       if (kDebugMode) {
         print('❌ completeLearning error: $e');
       }

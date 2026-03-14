@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../network/api_client.dart';
+import '../network/api_error_utils.dart';
 import '../network/api_endpoints.dart';
 import '../models/api_response.dart';
 import '../models/feedback_item.dart';
@@ -19,10 +20,14 @@ class FeedbackService {
 
   FeedbackService._();
 
+  String? _lastErrorMessage;
+  String? get lastErrorMessage => _lastErrorMessage;
+
   Future<PageResponse<AppFeedback>> listMyFeedbacks({
     int page = 0,
     int size = 10,
   }) async {
+    _lastErrorMessage = null;
     try {
       final response = await api.get(
         '${Api.feedbacks}/me',
@@ -30,6 +35,10 @@ class FeedbackService {
       );
       return _parseFeedbackPage(response.data);
     } catch (e) {
+      _lastErrorMessage = preferredUserErrorMessage(
+        e,
+        suppressFirebaseOrProvider: false,
+      );
       if (kDebugMode) {
         print('❌ listMyFeedbacks error: $e');
       }
@@ -41,6 +50,7 @@ class FeedbackService {
     int page = 0,
     int size = 10,
   }) async {
+    _lastErrorMessage = null;
     try {
       final response = await api.get(
         Api.feedbacks,
@@ -48,6 +58,10 @@ class FeedbackService {
       );
       return _parseFeedbackPage(response.data);
     } catch (e) {
+      _lastErrorMessage = preferredUserErrorMessage(
+        e,
+        suppressFirebaseOrProvider: false,
+      );
       if (kDebugMode) {
         print('❌ listFeedbacks error: $e');
       }
@@ -60,6 +74,7 @@ class FeedbackService {
     required String title,
     required String content,
   }) async {
+    _lastErrorMessage = null;
     try {
       final response = await api.post(Api.feedbacks, {
         'rating': rating.clamp(1, 5).toInt(),
@@ -86,11 +101,15 @@ class FeedbackService {
         message: 'Invalid response from server.',
       );
     } catch (e) {
+      final message = preferredUserErrorMessage(
+        e,
+        suppressFirebaseOrProvider: false,
+        fallback: 'Unable to submit feedback.',
+      );
+      _lastErrorMessage = message;
       return FeedbackCreateResult(
         success: false,
-        message: e.toString().trim().isEmpty
-            ? 'Unable to submit feedback.'
-            : e.toString(),
+        message: message ?? 'Unable to submit feedback.',
       );
     }
   }

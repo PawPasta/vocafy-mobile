@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../network/api_client.dart';
+import '../network/api_error_utils.dart';
 import '../network/api_endpoints.dart';
 import '../models/api_response.dart';
 import '../models/category.dart';
@@ -12,7 +13,11 @@ class CategoryService {
 
   CategoryService._();
 
+  String? _lastErrorMessage;
+  String? get lastErrorMessage => _lastErrorMessage;
+
   Future<List<AppCategory>> listCategories({int page = 0, int size = 10, String? name}) async {
+    _lastErrorMessage = null;
     try {
       final params = <String, dynamic>{
         'page': page,
@@ -51,6 +56,10 @@ class CategoryService {
 
       return parsed.result?.content ?? const <AppCategory>[];
     } catch (e) {
+      _lastErrorMessage = preferredUserErrorMessage(
+        e,
+        suppressFirebaseOrProvider: false,
+      );
       if (kDebugMode) {
         print('❌ listCategories error: $e');
       }

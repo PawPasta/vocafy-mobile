@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../network/api_client.dart';
+import '../network/api_error_utils.dart';
 import '../network/api_endpoints.dart';
 import '../models/api_response.dart';
 import '../models/page_response.dart';
@@ -12,8 +13,12 @@ class VocabularyService {
 
   VocabularyService._();
 
+  String? _lastErrorMessage;
+  String? get lastErrorMessage => _lastErrorMessage;
+
   /// Get vocabulary by ID
   Future<Vocabulary?> getVocabularyById(int id) async {
+    _lastErrorMessage = null;
     try {
       final response = await api.get('${Api.vocabularies}/$id');
       final data = response.data;
@@ -22,6 +27,10 @@ class VocabularyService {
         return Vocabulary.fromJson(data['result'] as Map<String, dynamic>);
       }
     } catch (e) {
+      _lastErrorMessage = preferredUserErrorMessage(
+        e,
+        suppressFirebaseOrProvider: false,
+      );
       if (kDebugMode) print('❌ getVocabularyById error: $e');
     }
     return null;
@@ -33,6 +42,7 @@ class VocabularyService {
     int page = 0,
     int size = 50,
   }) async {
+    _lastErrorMessage = null;
     try {
       final response = await api.get(
         '${Api.vocabulariesByCourse}/$courseId',
@@ -51,6 +61,10 @@ class VocabularyService {
         }
       }
     } catch (e) {
+      _lastErrorMessage = preferredUserErrorMessage(
+        e,
+        suppressFirebaseOrProvider: false,
+      );
       if (kDebugMode) print('❌ listVocabulariesByCourse error: $e');
     }
     return const <Vocabulary>[];
@@ -62,6 +76,7 @@ class VocabularyService {
     int page = 0,
     int size = 10,
   }) async {
+    _lastErrorMessage = null;
     try {
       final response = await api.get(
         '${Api.vocabularies}/me',
@@ -111,6 +126,10 @@ class VocabularyService {
             isLast: true,
           );
     } catch (e) {
+      _lastErrorMessage = preferredUserErrorMessage(
+        e,
+        suppressFirebaseOrProvider: false,
+      );
       if (kDebugMode) {
         print('❌ listMyVocabularies error: $e');
       }

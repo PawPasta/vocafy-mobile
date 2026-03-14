@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../network/api_client.dart';
+import '../network/api_error_utils.dart';
 import '../network/api_endpoints.dart';
 import '../models/course.dart';
 
@@ -10,8 +11,12 @@ class CourseService {
 
   CourseService._();
 
+  String? _lastErrorMessage;
+  String? get lastErrorMessage => _lastErrorMessage;
+
   /// Get course by ID
   Future<Course?> getCourseById(int id) async {
+    _lastErrorMessage = null;
     try {
       final response = await api.get('${Api.courses}/$id');
       final data = response.data;
@@ -19,6 +24,10 @@ class CourseService {
         return Course.fromJson(data['result'] as Map<String, dynamic>);
       }
     } catch (e) {
+      _lastErrorMessage = preferredUserErrorMessage(
+        e,
+        suppressFirebaseOrProvider: false,
+      );
       if (kDebugMode) print('❌ getCourseById error: $e');
     }
     return null;
@@ -26,6 +35,7 @@ class CourseService {
 
   /// List courses by topic ID
   Future<List<Course>> listCoursesByTopic(int topicId, {int page = 0, int size = 20}) async {
+    _lastErrorMessage = null;
     try {
       final response = await api.get(
         '${Api.coursesByTopic}/$topicId',
@@ -43,6 +53,10 @@ class CourseService {
         }
       }
     } catch (e) {
+      _lastErrorMessage = preferredUserErrorMessage(
+        e,
+        suppressFirebaseOrProvider: false,
+      );
       if (kDebugMode) print('❌ listCoursesByTopic error: $e');
     }
     return const <Course>[];

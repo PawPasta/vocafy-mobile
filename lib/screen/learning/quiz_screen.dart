@@ -107,9 +107,10 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
       );
       if (!mounted) return;
       if (questions.isEmpty) {
+        final apiError = quizService.lastErrorMessage;
         setState(() {
           _isLoading = false;
-          _error = 'No questions yet. Learn more vocabulary first!';
+          _error = apiError ?? 'No questions yet. Learn more vocabulary first!';
         });
       } else {
         // Calculate stage end indices
@@ -337,11 +338,12 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     if (!mounted) return;
 
     if (result == null) {
+      final apiError = quizService.lastErrorMessage;
       setState(() {
         _isSubmitting = false;
         _selectedOptionIndex = null;
         _inputError = question.questionType == 'LOOK_TERM_SELECT_MEANING'
-            ? 'Slow network or system error. Please try again.'
+            ? (apiError ?? 'Slow network or system error. Please try again.')
             : null;
       });
       return;
