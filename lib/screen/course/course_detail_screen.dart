@@ -24,6 +24,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   late final Future<_CourseData> _dataFuture;
 
   static const _primaryBlue = Color(0xFF4F6CFF);
+  static const _softErrorOrange = Color(0xFFF4A261);
 
   @override
   void initState() {
@@ -55,6 +56,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError || snapshot.data?.course == null) {
+              final message =
+                  courseService.lastErrorMessage ??
+                  vocabularyService.lastErrorMessage ??
+                  'Unable to load course';
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -62,10 +67,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                     const Icon(
                       Icons.error_outline,
                       size: 48,
-                      color: Colors.red,
+                      color: _softErrorOrange,
                     ),
                     const SizedBox(height: 16),
-                    const Text('Unable to load course'),
+                    Text(message),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () => Navigator.pop(context),

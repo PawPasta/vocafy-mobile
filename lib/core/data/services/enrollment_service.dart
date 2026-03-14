@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../network/api_client.dart';
+import '../network/api_error_utils.dart';
 import '../network/api_endpoints.dart';
 import '../models/api_response.dart';
 import '../models/page_response.dart';
@@ -11,6 +12,9 @@ class EnrollmentService {
   static EnrollmentService get instance => _instance;
 
   EnrollmentService._();
+
+  String? _lastErrorMessage;
+  String? get lastErrorMessage => _lastErrorMessage;
 
   static const List<String> supportedTargetLanguages = <String>[
     'EN',
@@ -25,6 +29,7 @@ class EnrollmentService {
     int syllabusId, {
     String preferredTargetLanguage = 'EN',
   }) async {
+    _lastErrorMessage = null;
     try {
       final response = await api.post(Api.enrollments, {
         'syllabus_id': syllabusId,
@@ -40,6 +45,10 @@ class EnrollmentService {
       }
       return false;
     } catch (e) {
+      _lastErrorMessage = preferredUserErrorMessage(
+        e,
+        suppressFirebaseOrProvider: false,
+      );
       if (kDebugMode) {
         print('❌ enrollSyllabus error: $e');
       }
@@ -54,6 +63,7 @@ class EnrollmentService {
     required int syllabusId,
     required String preferredTargetLanguage,
   }) async {
+    _lastErrorMessage = null;
     try {
       final response = await api.patch(Api.enrollmentsPreferredTargetLanguage, {
         'syllabus_id': syllabusId,
@@ -65,6 +75,10 @@ class EnrollmentService {
       return (response.statusCode ?? 0) >= 200 &&
           (response.statusCode ?? 0) < 300;
     } catch (e) {
+      _lastErrorMessage = preferredUserErrorMessage(
+        e,
+        suppressFirebaseOrProvider: false,
+      );
       if (kDebugMode) {
         print('❌ updatePreferredTargetLanguage error: $e');
       }
@@ -78,6 +92,7 @@ class EnrollmentService {
     int page = 0,
     int size = 10,
   }) async {
+    _lastErrorMessage = null;
     try {
       final response = await api.get(
         Api.enrollments,
@@ -109,6 +124,10 @@ class EnrollmentService {
 
       return parsed.result?.content ?? const <Enrollment>[];
     } catch (e) {
+      _lastErrorMessage = preferredUserErrorMessage(
+        e,
+        suppressFirebaseOrProvider: false,
+      );
       if (kDebugMode) {
         print('❌ listEnrollments error: $e');
       }
@@ -119,6 +138,7 @@ class EnrollmentService {
   /// Get focused enrollment
   /// GET /api/enrollments/focused
   Future<Enrollment?> getFocusedEnrollment() async {
+    _lastErrorMessage = null;
     try {
       final response = await api.get('${Api.enrollments}/focused');
 
@@ -129,6 +149,10 @@ class EnrollmentService {
       }
       return null;
     } catch (e) {
+      _lastErrorMessage = preferredUserErrorMessage(
+        e,
+        suppressFirebaseOrProvider: false,
+      );
       if (kDebugMode) {
         print('❌ getFocusedEnrollment error: $e');
       }

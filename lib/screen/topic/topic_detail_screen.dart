@@ -18,6 +18,7 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
 
   static const _primaryBlue = Color(0xFF4F6CFF);
   static const _cardBackground = Color(0xFFF0F4FF);
+  static const _softErrorOrange = Color(0xFFF4A261);
 
   @override
   void initState() {
@@ -37,6 +38,8 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError || snapshot.data == null) {
+              final message =
+                  topicService.lastErrorMessage ?? 'Không thể tải topic';
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -44,10 +47,10 @@ class _TopicDetailScreenState extends State<TopicDetailScreen> {
                     const Icon(
                       Icons.error_outline,
                       size: 48,
-                      color: Colors.red,
+                      color: _softErrorOrange,
                     ),
                     const SizedBox(height: 16),
-                    const Text('Không thể tải topic'),
+                    Text(message),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () => Navigator.pop(context),

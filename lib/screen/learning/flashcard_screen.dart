@@ -32,6 +32,7 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
   final FlutterTts _tts = FlutterTts();
 
   static const _blue = Color(0xFF4F6CFF);
+  static const _softErrorOrange = Color(0xFFF4A261);
 
   @override
   void initState() {
@@ -154,10 +155,11 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
       return true;
     }
 
+    final message = learningService.lastErrorMessage ?? 'Connection error';
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Connection error'),
-        backgroundColor: Colors.red,
+      SnackBar(
+        content: Text(message),
+        backgroundColor: _softErrorOrange,
       ),
     );
     return false;

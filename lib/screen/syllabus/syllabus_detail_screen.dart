@@ -33,6 +33,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
   late final Animation<double> _glowAnimation;
 
   static const _primaryBlue = Color(0xFF4F6CFF);
+  static const _softErrorOrange = Color(0xFFF4A261);
 
   @override
   void initState() {
@@ -74,6 +75,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
       widget.syllabusId,
       preferredTargetLanguage: selectedLanguage,
     );
+    final errorMessage = enrollmentService.lastErrorMessage;
 
     if (mounted) {
       setState(() => _isEnrolling = false);
@@ -91,9 +93,9 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unable to enroll. Please try again.'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: Text(errorMessage ?? 'Unable to enroll. Please try again.'),
+            backgroundColor: _softErrorOrange,
           ),
         );
       }
@@ -169,7 +171,9 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError || snapshot.data == null) {
-              return Center(child: Text('Error loading syllabus'));
+              final message =
+                  syllabusService.lastErrorMessage ?? 'Error loading syllabus';
+              return Center(child: Text(message));
             }
 
             final s = snapshot.data!;
@@ -474,6 +478,7 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
     final learningSet = await learningService.startLearning(
       syllabusId: widget.syllabusId,
     );
+    final errorMessage = learningService.lastErrorMessage;
 
     if (mounted) {
       setState(() => _isStartingLearning = false);
@@ -491,9 +496,11 @@ class _SyllabusDetailScreenState extends State<SyllabusDetailScreen>
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No vocabulary to learn or a connection error.'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: Text(
+              errorMessage ?? 'No vocabulary to learn or a connection error.',
+            ),
+            backgroundColor: _softErrorOrange,
           ),
         );
       }

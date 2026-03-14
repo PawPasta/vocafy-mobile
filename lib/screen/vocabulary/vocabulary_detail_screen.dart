@@ -20,6 +20,7 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
   String? _currentSpeakingText;
 
   static const _primaryBlue = Color(0xFF4F6CFF);
+  static const _softErrorOrange = Color(0xFFF4A261);
 
   @override
   void initState() {
@@ -108,6 +109,9 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError || snapshot.data == null) {
+              final message =
+                  vocabularyService.lastErrorMessage ??
+                  'Unable to load vocabulary';
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -115,10 +119,10 @@ class _VocabularyDetailScreenState extends State<VocabularyDetailScreen> {
                     const Icon(
                       Icons.error_outline,
                       size: 48,
-                      color: Colors.red,
+                      color: _softErrorOrange,
                     ),
                     const SizedBox(height: 16),
-                    const Text('Unable to load vocabulary'),
+                    Text(message),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () => Navigator.pop(context),

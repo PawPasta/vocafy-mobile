@@ -9,6 +9,7 @@ import '../enrollments/enrollments_screen.dart';
 const _feedbackPrimaryBlue = Color(0xFF4F6CFF);
 const _feedbackPrimaryBlueDark = Color(0xFF3F5BFF);
 const _feedbackSurfaceBlue = Color(0xFFF5F7FF);
+const _softErrorOrange = Color(0xFFF4A261);
 
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key});
@@ -350,7 +351,7 @@ class _CreateFeedbackSheetState extends State<_CreateFeedbackSheet> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(result.message),
-        backgroundColor: result.success ? Colors.green : Colors.red,
+        backgroundColor: result.success ? Colors.green : _softErrorOrange,
         behavior: SnackBarBehavior.floating,
       ),
     );

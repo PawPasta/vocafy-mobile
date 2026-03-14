@@ -22,6 +22,7 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
   bool _hasMore = true;
 
   static const _primaryBlue = Color(0xFF4F6CFF);
+  static const _softErrorOrange = Color(0xFFF4A261);
 
   @override
   void initState() {
@@ -155,6 +156,7 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
       syllabusId: enrollment.syllabusId,
       preferredTargetLanguage: chosenLanguage,
     );
+    final errorMessage = enrollmentService.lastErrorMessage;
 
     if (!mounted) return;
 
@@ -188,9 +190,10 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
         content: Text(
           success
               ? 'Learning language updated to ${_targetLanguageLabel(chosenLanguage)}.'
-              : 'Unable to update learning language. Please try again.',
+              : (errorMessage ??
+                    'Unable to update learning language. Please try again.'),
         ),
-        backgroundColor: success ? Colors.green : Colors.red,
+        backgroundColor: success ? Colors.green : _softErrorOrange,
       ),
     );
   }
